@@ -2,7 +2,7 @@ const { query: q } = require('faunadb')
 const client = require('./client')
 const { GetObjectFields, ExtractValues } = require('./utility')
 
-module.exports = ({ collections, indexes }) => {
+module.exports = ({ collections, indexes, functions }) => {
   const queries = [
     ...collections.map((collection) => ({
       name: `collection.${collection.name}`,
@@ -11,6 +11,10 @@ module.exports = ({ collections, indexes }) => {
     ...indexes.map((index) => ({
       name: `index.${index.name}`,
       query: UpsertIndex(index),
+    })),
+    ...functions.map((fn) => ({
+      name: `function.${fn.name}`,
+      query: UpsertFunction(fn),
     })),
   ]
 
@@ -48,6 +52,30 @@ const UpsertCollection = (collection) => {
       res: q.Var('res'),
       isExists: q.Var('isExists'),
       label: 'collection',
+    })
+  )
+}
+
+const UpsertFunction = (fn) => {
+  return q.Let(
+    {
+      name: q.Select(['name'], fn),
+      ref: q.Function(q.Var('name')),
+      isExists: q.Exists(q.Var('ref')),
+      res: q.If(
+        q.Var('isExists'),
+        UpdateIfChanged({
+          ref: q.Var('ref'),
+          obj: fn,
+          UpdateFql: q.Update(q.Var('ref'), fn),
+        }),
+        q.CreateFunction(fn)
+      ),
+    },
+    LogResult({
+      res: q.Var('res'),
+      isExists: q.Var('isExists'),
+      label: 'function',
     })
   )
 }

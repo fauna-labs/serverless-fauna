@@ -1,6 +1,6 @@
 const deploy = require('../fauna/deploy')
-const { query: q, Expr } = require('faunadb')
-const baseEvalFql = require('../fauna/baseEvalFql')
+const { query: q } = require('faunadb')
+const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
 
 class DeployCommand {
   command = {
@@ -22,11 +22,41 @@ class DeployCommand {
     this.logger = logger
   }
 
-  deploy() {
-    const { collections, indexes } = this.config
-    return deploy({
-      collections: Object.values(collections),
-      indexes: Object.values(indexes).map((index) => ({
+  async deploy() {
+    const { collections, functions, indexes } = this.config
+    try {
+      const result = await deploy({
+        collections: Object.values(collections),
+        functions: Object.values(functions).map((fn) =>
+          this.functionAdapter(fn)
+        ),
+        indexes: Object.values(indexes).map((index) =>
+          this.indexAdapter(index)
+        ),
+      })
+
+      return result.length
+        ? result.forEach(this.logger.success)
+        : this.logger.success('Schema up to date')
+    } catch (error) {
+      this.logger.error(error)
+    }
+  }
+
+  functionAdapter(fn) {
+    try {
+      return {
+        ...fn,
+        body: baseEvalFqlQuery(fn.body),
+      }
+    } catch (error) {
+      throw new Error(`function.${fn.name}: ${error.message}`)
+    }
+  }
+
+  indexAdapter(index) {
+    try {
+      return {
         ...index,
         source: (Array.isArray(index.source)
           ? index.source
@@ -34,14 +64,10 @@ class DeployCommand {
         ).map(this.indexSourceAdapter),
         ...(index.terms && { terms: this.indexTermsAdapter(index.terms) }),
         ...(index.values && { values: this.indexValuesAdapter(index.values) }),
-      })),
-    })
-      .then((result) =>
-        result.length
-          ? result.forEach(this.logger.success)
-          : this.logger.success('Schema up to date')
-      )
-      .catch((err) => this.logger.error(err))
+      }
+    } catch (error) {
+      throw new Error(`index.${index.name}: ${error.message}`)
+    }
   }
 
   indexSourceAdapter(source) {
@@ -55,10 +81,9 @@ class DeployCommand {
       adapterSource.fields = {}
 
       Object.keys(source.fields).forEach((bindingKey) => {
-        const fql = baseEvalFql(source.fields[bindingKey])
-        if (fql.length != 1) throw new Error('Binding must have only 1 query')
-        adapterSource.fields[bindingKey] = q.Query(q.Lambda('doc', fql[0]))
-        console.info(Expr.toString(adapterSource.fields[bindingKey]))
+        adapterSource.fields[bindingKey] = baseEvalFqlQuery(
+          source.fields[bindingKey]
+        )
       })
     }
 

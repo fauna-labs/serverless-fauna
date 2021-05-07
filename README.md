@@ -4,7 +4,9 @@ A serverless plugin to easily describe Fauna infrastructure as a code. Plugins h
 
 ## TODO list
 - delete resource (consider `deletion_policy` of the resource)
-- create/update/delete UDF
+- add `role` support to `function` (the role that should be used when the user-defined function is called)
+- implement `CreateRole` from serverless config
+- unit/integration tests
 
 ## Usage
 
@@ -24,36 +26,41 @@ $ yarn add serverless-fauna
 plugins:
   - serverless-fauna
 fauna:
-    collections:
-      Movies: 
-        name: Movies
-        data:
-          some_data_key: some_data_value
+  collections:
+    Movies: 
+      name: Movies
+      data:
+        some_data_key: some_data_value
 
-    indexes:
-      movies_by_type:
-        name: movies_by_type
-        source: ${self:fauna.collections.Movies.name}
-        terms:
-          fields: 
-            - data.type
+  functions:
+    double:
+      name: double
+      body: ${file('./double.fql')}
 
-      movies_by_category:
-        name: movies_by_category
-        source: ${self:fauna.collections.Movies.name}
-        data:
-          some_data_key: some_data_value
-        terms:
-          fields: 
-            - data.category
+  indexes:
+    movies_by_type:
+      name: movies_by_type
+      source: ${self:fauna.collections.Movies.name}
+      terms:
+        fields: 
+          - data.type
 
-      sort_by_year:
-        name: sort_by_year
-        source: ${self:fauna.collections.Movies.name}
-        values:
-          fields:
-            - data.type
-            - ref
+    movies_by_category:
+      name: movies_by_category
+      source: ${self:fauna.collections.Movies.name}
+      data:
+        some_data_key: some_data_value
+      terms:
+        fields: 
+          - data.category
+
+    sort_by_year:
+      name: sort_by_year
+      source: ${self:fauna.collections.Movies.name}
+      values:
+        fields:
+          - data.type
+          - ref
 ```
 ### Collection configuration
 Can accept any param that accept `CreateCollection` query.
@@ -67,6 +74,21 @@ collections:
     ttl_days: 10
     data:
       some_data_key: some_data_value
+```
+
+### Function configuration
+Can accept any param that accept `CreateFunction` query.
+Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createfunction?lang=javascript)
+
+```yaml
+  functions:
+    double:
+      name: double
+      body: ${file('./double.fql')}
+      # role: admin TODO: need implement
+      data:
+        desc: double number
+
 ```
 
 ### Index configuration

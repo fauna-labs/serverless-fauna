@@ -1,15 +1,16 @@
 const { query } = require('faunadb')
 module.exports = (codes) => {
-  return parseQueries(codes).map((parsedQuery) => {
-    return eval(
-      Object.keys(query).reduce((f, q) => {
-        return f.replace(new RegExp(`${q}\((.*)\)`), `query.${q}$1`)
-      }, parsedQuery)
+  return query.Query(
+    eval(
+      Object.keys(query).reduce(
+        (f, q) => f.split(`${q}(`).join(`query.${q}(`),
+        parseQuery(codes)
+      )
     )
-  })
+  )
 }
 
-function parseQueries(code) {
+function parseQuery(code) {
   const brackets = {
     '{': '}',
     '(': ')',
@@ -48,5 +49,8 @@ function parseQueries(code) {
     throw new Error('Expect all opened brackets to be closed')
   }
 
-  return queries
+  if (queries.length !== 1 || queries[0].substr(0, 6) !== 'Lambda')
+    throw new Error('FQL must have 1 `Lambda` query')
+
+  return queries[0]
 }
