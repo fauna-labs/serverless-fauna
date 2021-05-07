@@ -75,6 +75,8 @@ collections:
 Can accept any param that accept CreateIndex query.
 Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object)
 
+`terms`, `values` and `source` can be set only if index doesn't exists. If you change those configuration for existing index, plugin would throw an error when tried update it
+
 ```yaml
 search_by_category_and_sort_by_year:
   name: search_by_category_and_sort_by_year
@@ -95,15 +97,20 @@ search_by_category_and_sort_by_year:
 
 #### Index source
 Index source could be a string and interpreted as collection reference
+
 ```yaml
 source: Movie
 ```
+
 Or a source object. Read more about [source object](https://docs.fauna.com/fauna/current/api/fql/indexes?lang=javascript#source)
+
 ```yaml
 source:
   collection: Movie
 ```
+
 Or an array of object
+
 ```yaml
 source:
   - collection: Movies
@@ -112,6 +119,7 @@ source:
 ```
 
 #### Index terms
+
 ```yaml
 terms:
   field:
@@ -122,6 +130,7 @@ terms:
 
 #### Index values
 Index values looks pretty the same as terms, but has additional `reverse` field which determinate sort order
+
 ```yaml
 values:
   field:

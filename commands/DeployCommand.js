@@ -48,16 +48,28 @@ class DeployCommand {
       return { collection: q.Collection(s.collection) }
     })
 
-    const mapTermAndValues = ({ field = [], binding = [] }) => [
+    const mapTerm = ({ field = [], binding = [] }) => [
       ...field.map((field) => ({ field: field.split('.') })),
+      ...binding.map((binding) => ({ binding })),
+    ]
+
+    const mapValue = ({ field = [], binding = [] }) => [
+      ...field.map((f) =>
+        typeof f === 'string'
+          ? { field: f.split('.') }
+          : {
+              reverse: f.reverse,
+              field: f.path.split('.'),
+            }
+      ),
       ...binding.map((binding) => ({ binding })),
     ]
 
     return {
       ...index,
       source,
-      ...(index.terms && { terms: mapTermAndValues(index.terms) }),
-      ...(index.values && { values: mapTermAndValues(index.values) }),
+      ...(index.terms && { terms: mapTerm(index.terms) }),
+      ...(index.values && { values: mapValue(index.values) }),
     }
   }
 }

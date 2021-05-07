@@ -55,15 +55,19 @@ class ServerlessFaunaPlugin {
       type: 'object',
       properties: {
         field: { type: 'array', items: { type: 'string' } },
+        binding: { type: 'array', items: { type: 'string' } },
       },
+      oneOf: [{ required: 'field' }, { required: 'binding' }],
     }
 
     const valuesProp = {
       type: 'object',
       properties: {
         field: { type: 'array', items: { type: 'string' } },
+        binding: { type: 'array', items: { type: 'string' } },
         reverse: { type: 'boolean' },
       },
+      oneOf: [{ required: 'field' }, { required: 'binding' }],
     }
 
     const indexProp = {
@@ -77,7 +81,7 @@ class ServerlessFaunaPlugin {
         ],
       },
       terms: termsProp,
-      values: termsValuesProp,
+      values: valuesProp,
       required: ['name', 'source'],
     }
 
