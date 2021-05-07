@@ -15,14 +15,14 @@ class DeployCommand {
     'fauna:deploy:deploy': this.deploy.bind(this),
   }
 
-  constructor({ serverless, faunaClient, logger }) {
-    this.serverless = serverless
+  constructor({ config, faunaClient, logger }) {
+    this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
   }
 
   deploy() {
-    const { collections, indexes } = this.serverless.service.custom.fauna
+    const { collections, indexes } = this.config
     return deploy({
       collections: Object.values(collections),
       indexes: Object.values(indexes).map((i) => this.indexAdapter(i)),
@@ -39,9 +39,13 @@ class DeployCommand {
     const source = (Array.isArray(index.source)
       ? index.source
       : [index.source]
-    ).map(({ collection, fields }) => {
-      if (fields) throw new Error("index doesn't `source.fields` yet")
-      return { collection: q.Collection(collection) }
+    ).map((s) => {
+      if (typeof s === 'string') {
+        return { collection: q.Collection(s) }
+      }
+
+      if (s.fields) throw new Error("index doesn't `source.fields` yet")
+      return { collection: q.Collection(s.collection) }
     })
 
     const mapTermAndValues = ({ field = [], binding = [] }) => [
