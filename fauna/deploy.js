@@ -55,7 +55,7 @@ const UpsertCollections = (collections) => {
 }
 
 const UpsertIndexes = (indexes) => {
-  return q.Map(indexes.map(mapIndex), (index) =>
+  return q.Map(indexes, (index) =>
     q.Let(
       {
         name: q.Select(['name'], index),
@@ -159,21 +159,6 @@ const LogResult = ({ res, isExists, label }) =>
     ),
     null
   )
-
-const mapIndex = (index) => {
-  const source = (Array.isArray(index.source)
-    ? index.source
-    : [index.source]
-  ).map(({ collection, fields }) => {
-    if (fields) throw new Error("index doesn't `source.fields` yet")
-
-    return { collection: q.Collection(collection) }
-  })
-  return {
-    ...index,
-    source,
-  }
-}
 
 const handleError = ({ errResp, name }) => {
   console.info(errResp)
