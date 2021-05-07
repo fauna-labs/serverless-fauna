@@ -51,10 +51,18 @@ class ServerlessFaunaPlugin {
       required: ['collection'],
     }
 
-    const termsValuesProp = {
+    const termsProp = {
       type: 'object',
       properties: {
         field: { type: 'array', items: { type: 'string' } },
+      },
+    }
+
+    const valuesProp = {
+      type: 'object',
+      properties: {
+        field: { type: 'array', items: { type: 'string' } },
+        reverse: { type: 'boolean' },
       },
     }
 
@@ -68,7 +76,7 @@ class ServerlessFaunaPlugin {
           sourceObjProp,
         ],
       },
-      terms: termsValuesProp,
+      terms: termsProp,
       values: termsValuesProp,
       required: ['name', 'source'],
     }
