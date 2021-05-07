@@ -3,9 +3,10 @@
 A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
 
 ## TODO list
-- delete resource (consider `deletion_policy` of the resource)
 - CreateIndex binding. read fql from configuration or file
 - Support reverse index
+- delete resource (consider `deletion_policy` of the resource)
+- create/update/delete UDF
 
 ## Usage
 
