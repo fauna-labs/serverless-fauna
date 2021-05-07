@@ -36,19 +36,29 @@ class ServerlessFaunaPlugin {
   defineConfigSchema() {
     const collectionProp = {
       type: 'object',
-      name: { type: 'string' },
-      data: { type: 'object' },
-      history_days: { type: 'integer' },
-      ttl_days: { type: 'integer' },
+      properties: {
+        name: { type: 'string' },
+        data: { type: 'object' },
+        history_days: { type: 'integer' },
+        ttl_days: { type: 'integer' },
+      },
       required: ['name'],
+      additionalProperties: false,
     }
 
     const sourceObjProp = {
       type: 'object',
       properties: {
-        collection: 'string',
+        collection: { type: 'string' },
+        fields: {
+          type: 'object',
+          patternProperties: {
+            '.*': { type: 'string' },
+          },
+        },
       },
       required: ['collection'],
+      additionalProperties: false,
     }
 
     const termsProp = {
@@ -57,30 +67,62 @@ class ServerlessFaunaPlugin {
         fields: { type: 'array', items: { type: 'string' } },
         bindings: { type: 'array', items: { type: 'string' } },
       },
-      oneOf: [{ required: 'fields' }, { required: 'bindings' }],
+      oneOf: [{ required: ['fields'] }, { required: ['bindings'] }],
+      additionalProperties: false,
+    }
+
+    const valueFieldProp = {
+      type: 'object',
+      properties: {
+        path: { type: 'string' },
+        reverse: { type: 'boolean' },
+      },
+      required: ['path'],
+      additionalProperties: false,
     }
 
     const valuesProp = {
-      ...termsProp,
+      type: 'object',
       properties: {
-        ...termsProp.properties,
-        reverse: { type: 'boolean' },
+        fields: {
+          type: 'array',
+          items: {
+            oneOf: [{ type: 'string' }, valueFieldProp],
+          },
+        },
+        bindings: { type: 'array', items: { type: 'string' } },
       },
+      additionalProperties: false,
     }
 
     const indexProp = {
       type: 'object',
-      name: { type: 'string' },
-      source: {
-        oneOf: [
-          { type: 'string' },
-          { type: 'array', items: sourceObjProp },
-          sourceObjProp,
-        ],
+      properties: {
+        name: { type: 'string' },
+        source: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'array', items: sourceObjProp },
+            sourceObjProp,
+          ],
+        },
+        terms: termsProp,
+        values: valuesProp,
+        data: { type: 'object' },
       },
-      terms: termsProp,
-      values: valuesProp,
       required: ['name', 'source'],
+      additionalProperties: false,
+    }
+
+    const functionProp = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        body: { type: 'string' },
+        data: { type: 'object' },
+      },
+      required: ['name', 'body'],
+      additionalProperties: false,
     }
 
     const faunaProp = {
@@ -98,7 +140,14 @@ class ServerlessFaunaPlugin {
             '.*': indexProp,
           },
         },
+        functions: {
+          type: 'object',
+          patternProperties: {
+            '.*': functionProp,
+          },
+        },
       },
+      additionalProperties: false,
     }
 
     this.serverless.configSchemaHandler.defineTopLevelProperty(
