@@ -3,8 +3,6 @@
 A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
 
 ## TODO list
-- CreateIndex binding. read fql from configuration or file
-- Support reverse index
 - delete resource (consider `deletion_policy` of the resource)
 - create/update/delete UDF
 
@@ -37,7 +35,7 @@ fauna:
         name: movies_by_type
         source: ${self:fauna.collections.Movies.name}
         terms:
-          field: 
+          fields: 
             - data.type
 
       movies_by_category:
@@ -46,14 +44,14 @@ fauna:
         data:
           some_data_key: some_data_value
         terms:
-          field: 
+          fields: 
             - data.category
 
       sort_by_year:
         name: sort_by_year
         source: ${self:fauna.collections.Movies.name}
         values:
-          field:
+          fields:
             - data.type
             - ref
 ```
@@ -82,17 +80,18 @@ search_by_category_and_sort_by_year:
   name: search_by_category_and_sort_by_year
   source: 
     collection: ${self:fauna.collections.Movies.name}
-    binding: TODO: FQL HERE
+    fields: 
+      is_current_year: ${file(./IsCurrentYear.fql)}
   terms:
-    field:
+    fields:
       -data.category
   values:
-    field:
+    fields:
       - path: data.type
         reverse: true
       - ref
-    binding:
-      - TODO:
+    bindings:
+      - is_current_year
 ```
 
 #### Index source
@@ -122,9 +121,9 @@ source:
 
 ```yaml
 terms:
-  field:
+  fields:
     - data.search
-  binding:
+  bindings:
     - binding
 ```
 
@@ -133,19 +132,36 @@ Index values looks pretty the same as terms, but has additional `reverse` field 
 
 ```yaml
 values:
-  field:
+  fields:
     - path: data.field
       reverse: true
-  binding:
+  bindings:
     - binding
 ```
 
 #### Index binding
 Index allow you to compute fields for a source while the document is being indexed.
 Read more about [index bindings](https://docs.fauna.com/fauna/current/tutorials/indexes/bindings)
-TODO: test and specify format
+You can specify multiline fql
 
+```yml
+source:
+  collection: Movies
+  fields:
+    is_current_year: >
+      Equals([
+        Year(Now()),
+        ToInteger(Select(['data', 'release_year'], Var('doc')))
+      ])
+```
+Or create file with `.fql` extension. We have [Fauna VSCode plugin](https://marketplace.visualstudio.com/items?itemName=fauna.fauna) to handle `.fql` files
 
+```yml
+source:
+  collection: Movies
+  fields:
+    is_current_year: ${file(./IsCurrentYear.fql)}
+```
 
 ### Deletion policy
 Plugin keep sync between serverless configuration and current Fauna state. Therefore, plugin will remove all resources that currently exists at the Fauna but not declared at configuration would be removed. However, there are some resources that you absolutely do not want getting deleted.

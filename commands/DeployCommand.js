@@ -1,5 +1,6 @@
 const deploy = require('../fauna/deploy')
-const { query: q } = require('faunadb')
+const { query: q, Expr } = require('faunadb')
+const baseEvalFql = require('../fauna/baseEvalFql')
 
 class DeployCommand {
   command = {
@@ -25,7 +26,15 @@ class DeployCommand {
     const { collections, indexes } = this.config
     return deploy({
       collections: Object.values(collections),
-      indexes: Object.values(indexes).map((i) => this.indexAdapter(i)),
+      indexes: Object.values(indexes).map((index) => ({
+        ...index,
+        source: (Array.isArray(index.source)
+          ? index.source
+          : [index.source]
+        ).map(this.indexSourceAdapter),
+        ...(index.terms && { terms: this.indexTermsAdapter(index.terms) }),
+        ...(index.values && { values: this.indexValuesAdapter(index.values) }),
+      })),
     })
       .then((result) =>
         result.length
@@ -35,42 +44,46 @@ class DeployCommand {
       .catch((err) => this.logger.error(err))
   }
 
-  indexAdapter(index) {
-    const source = (Array.isArray(index.source)
-      ? index.source
-      : [index.source]
-    ).map((s) => {
-      if (typeof s === 'string') {
-        return { collection: q.Collection(s) }
-      }
+  indexSourceAdapter(source) {
+    const adapterSource = {
+      collection: q.Collection(
+        typeof source === 'string' ? source : source.collection
+      ),
+    }
 
-      if (s.fields) throw new Error("index doesn't `source.fields` yet")
-      return { collection: q.Collection(s.collection) }
-    })
+    if (source.fields) {
+      adapterSource.fields = {}
 
-    const mapTerm = ({ field = [], binding = [] }) => [
-      ...field.map((field) => ({ field: field.split('.') })),
-      ...binding.map((binding) => ({ binding })),
-    ]
+      Object.keys(source.fields).forEach((bindingKey) => {
+        const fql = baseEvalFql(source.fields[bindingKey])
+        if (fql.length != 1) throw new Error('Binding must have only 1 query')
+        adapterSource.fields[bindingKey] = q.Query(q.Lambda('doc', fql[0]))
+        console.info(Expr.toString(adapterSource.fields[bindingKey]))
+      })
+    }
 
-    const mapValue = ({ field = [], binding = [] }) => [
-      ...field.map((f) =>
-        typeof f === 'string'
-          ? { field: f.split('.') }
+    return adapterSource
+  }
+
+  indexValuesAdapter({ fields = [], bindings = [] }) {
+    return [
+      ...fields.map((field) =>
+        typeof field === 'string'
+          ? { field: field.split('.') }
           : {
-              reverse: f.reverse,
-              field: f.path.split('.'),
+              reverse: field.reverse,
+              field: field.path.split('.'),
             }
       ),
-      ...binding.map((binding) => ({ binding })),
+      ...bindings.map((binding) => ({ binding })),
     ]
+  }
 
-    return {
-      ...index,
-      source,
-      ...(index.terms && { terms: mapTerm(index.terms) }),
-      ...(index.values && { values: mapValue(index.values) }),
-    }
+  indexTermsAdapter({ fields = [], bindings = [] }) {
+    return [
+      ...fields.map((field) => ({ field: field.split('.') })),
+      ...bindings.map((binding) => ({ binding })),
+    ]
   }
 }
 

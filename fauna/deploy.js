@@ -4,14 +4,14 @@ const { GetObjectFields, ExtractValues } = require('./utility')
 
 module.exports = ({ collections, indexes }) => {
   const queries = [
-    {
-      name: 'collections',
-      query: UpsertCollections(collections),
-    },
-    {
-      name: 'indexes',
-      query: UpsertIndexes(indexes),
-    },
+    ...collections.map((collection) => ({
+      name: `collection.${collection.name}`,
+      query: UpsertCollection(collection),
+    })),
+    ...indexes.map((index) => ({
+      name: `index.${index.name}`,
+      query: UpsertIndex(index),
+    })),
   ]
 
   return queries
@@ -28,60 +28,55 @@ module.exports = ({ collections, indexes }) => {
     .then((result) => result.filter((r) => !!r))
 }
 
-const UpsertCollections = (collections) => {
-  return q.Map(collections, (collection) =>
-    q.Let(
-      {
-        name: q.Select(['name'], collection),
-        ref: q.Collection(q.Var('name')),
-        isExists: q.Exists(q.Var('ref')),
-        res: q.If(
-          q.Var('isExists'),
-          UpdateIfChanged({
-            ref: q.Var('ref'),
-            obj: collection,
-            UpdateFql: q.Update(q.Var('ref'), collection),
-          }),
-          q.CreateCollection(collection)
-        ),
-      },
-      LogResult({
-        res: q.Var('res'),
-        isExists: q.Var('isExists'),
-        label: 'collection',
-      })
-    )
+const UpsertCollection = (collection) => {
+  return q.Let(
+    {
+      name: q.Select(['name'], collection),
+      ref: q.Collection(q.Var('name')),
+      isExists: q.Exists(q.Var('ref')),
+      res: q.If(
+        q.Var('isExists'),
+        UpdateIfChanged({
+          ref: q.Var('ref'),
+          obj: collection,
+          UpdateFql: q.Update(q.Var('ref'), collection),
+        }),
+        q.CreateCollection(collection)
+      ),
+    },
+    LogResult({
+      res: q.Var('res'),
+      isExists: q.Var('isExists'),
+      label: 'collection',
+    })
   )
 }
 
-const UpsertIndexes = (indexes) => {
-  return q.Map(indexes, (index) =>
-    q.Let(
-      {
-        name: q.Select(['name'], index),
-        ref: q.Index(q.Var('name')),
-        isExists: q.Exists(q.Var('ref')),
-        res: q.If(
-          q.Var('isExists'),
-          UpdateIfChanged({
+const UpsertIndex = (index) => {
+  return q.Let(
+    {
+      name: q.Select(['name'], index),
+      ref: q.Index(q.Var('name')),
+      isExists: q.Exists(q.Var('ref')),
+      res: q.If(
+        q.Var('isExists'),
+        UpdateIfChanged({
+          ref: q.Var('ref'),
+          obj: index,
+          UpdateFql: SafeUpdateWithReadonly({
             ref: q.Var('ref'),
+            readonly: ['source', 'terms', 'values'],
             obj: index,
-            UpdateFql: SafeUpdateWithReadonly({
-              ref: q.Var('ref'),
-              readonly: ['source', 'terms', 'values'],
-              obj: index,
-              label: 'index',
-            }),
           }),
-          q.CreateIndex(index)
-        ),
-      },
-      LogResult({
-        res: q.Var('res'),
-        isExists: q.Var('isExists'),
-        label: 'index',
-      })
-    )
+        }),
+        q.CreateIndex(index)
+      ),
+    },
+    LogResult({
+      res: q.Var('res'),
+      isExists: q.Var('isExists'),
+      label: 'index',
+    })
   )
 }
 
@@ -102,7 +97,7 @@ const UpdateIfChanged = ({ ref, obj, UpdateFql }) =>
  * Checks if readonly fields not modified and update all the rest
  * If readonly fields modified, abort and show proper message to a user
  */
-const SafeUpdateWithReadonly = ({ ref, readonly, obj, label }) =>
+const SafeUpdateWithReadonly = ({ ref, readonly, obj }) =>
   q.Let(
     {
       db: q.Get(ref),
@@ -137,14 +132,7 @@ const SafeUpdateWithReadonly = ({ ref, readonly, obj, label }) =>
     q.If(
       q.Equals(q.Var('dbReadonlyFields'), q.Var('updateReadonlyFields')),
       q.Update(ref, q.Var('secureUpdateFields')),
-      q.Abort(
-        q.Format(
-          'Field %s are readonly. Check %s `%s`',
-          q.Concat(readonly, ','),
-          label,
-          q.Select(['name'], obj)
-        )
-      )
+      q.Abort(q.Format('Field %s are readonly', q.Concat(readonly, ',')))
     )
   )
 
@@ -161,7 +149,6 @@ const LogResult = ({ res, isExists, label }) =>
   )
 
 const handleError = ({ errResp, name }) => {
-  console.info(errResp)
   const error = errResp.requestResult.responseContent.errors[0]
   const title = `Can't create '${name}'`
 
