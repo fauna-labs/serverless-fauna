@@ -8,12 +8,7 @@ const GetObjectFields = (obj) =>
  * If obj doesn't have field, handle it gracefully and doesn't return it value
  */
 const ExtractValues = ({ obj, fields }) =>
-  q.ToObject(
-    q.Filter(
-      q.Map(fields, (ro) => [ro, q.Select([ro], obj, null)]),
-      (el) => q.Not(q.IsNull(q.Select([1], el)))
-    )
-  )
+  q.ToObject(q.Map(fields, (ro) => [ro, q.Select([ro], obj, null)]))
 
 const ReplaceObject = ({ newData = {}, currentData }) => {
   return q.Merge(
