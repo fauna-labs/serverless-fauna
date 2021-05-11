@@ -121,6 +121,7 @@ class ServerlessFaunaPlugin {
         name: { type: 'string' },
         body: { type: 'string' },
         data: { type: 'object' },
+        role: { type: 'string' },
       },
       required: ['name', 'body'],
       additionalProperties: false,
@@ -134,7 +135,109 @@ class ServerlessFaunaPlugin {
         scheme: { type: 'string' },
         port: { type: 'number' },
       },
+      additionalProperties: false,
       required: ['secret'],
+    }
+
+    const rolePrivilegeSchemaActionsProp = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        read: { type: 'boolean' },
+        write: { type: 'boolean' },
+        create: { type: 'boolean' },
+        delete: { type: 'boolean' },
+        history_read: { type: 'boolean' },
+        history_write: { type: 'boolean' },
+      },
+    }
+
+    const rolePrivilegeCollectionActionsProp = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        read: { anyOf: [{ type: 'boolean' }, { type: 'string' }] },
+        write: { anyOf: [{ type: 'boolean' }, { type: 'string' }] },
+        create: { type: 'boolean' },
+        delete: { type: 'boolean' },
+        history_read: { type: 'boolean' },
+        history_write: { type: 'boolean' },
+        unrestricted_read: { type: 'boolean' },
+      },
+    }
+
+    const rolePrivilegeFunctionActionsProp = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        call: { type: 'boolean' },
+      },
+    }
+
+    const rolePrivilegeIndexActionsProp = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        unrestricted_read: { type: 'boolean' },
+        read: { type: 'boolean' },
+      },
+    }
+
+    const rolePrivilegeProp = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        collection: { type: 'string' },
+        index: { type: 'string' },
+        function: { type: 'string' },
+        // following fields has type `boolean` as a workaround that allow use format like:
+        // indexes:
+        indexes: { type: 'boolean' },
+        collections: { type: 'boolean' },
+        databases: { type: 'boolean' },
+        roles: { type: 'boolean' },
+        functions: { type: 'boolean' },
+        keys: { type: 'boolean' },
+        actions: {
+          anyOf: [
+            rolePrivilegeSchemaActionsProp,
+            rolePrivilegeCollectionActionsProp,
+            rolePrivilegeFunctionActionsProp,
+            rolePrivilegeIndexActionsProp,
+          ],
+        },
+      },
+    }
+
+    const membershipProp = {
+      type: 'object',
+      required: ['resource'],
+      additionalProperties: false,
+      properties: {
+        resource: { type: 'string' },
+        predicate: { type: 'string' },
+      },
+    }
+
+    const roleProp = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        membership: {
+          anyOf: [
+            { type: 'string' },
+            { type: 'array', items: { type: 'string' } },
+            membershipProp,
+            { type: 'array', items: membershipProp },
+          ],
+        },
+        privileges: {
+          type: 'array',
+          items: rolePrivilegeProp,
+        },
+      },
+      additionalProperties: false,
+      required: ['name', 'privileges'],
     }
 
     const faunaProp = {
@@ -157,6 +260,12 @@ class ServerlessFaunaPlugin {
           type: 'object',
           patternProperties: {
             '.*': functionProp,
+          },
+        },
+        roles: {
+          type: 'object',
+          patternProperties: {
+            '.*': roleProp,
           },
         },
       },

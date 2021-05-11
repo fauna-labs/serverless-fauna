@@ -7,12 +7,24 @@ const GetObjectFields = (obj) =>
  * Extract values from object by keys.
  * If obj doesn't have field, handle it gracefully and doesn't return it value
  */
-const ExtractValues = ({ obj, keys }) =>
+const ExtractValues = ({ obj, fields }) =>
   q.ToObject(
     q.Filter(
-      q.Map(keys, (ro) => [ro, q.Select([ro], obj, null)]),
+      q.Map(fields, (ro) => [ro, q.Select([ro], obj, null)]),
       (el) => q.Not(q.IsNull(q.Select([1], el)))
     )
   )
 
-module.exports = { GetObjectFields, ExtractValues }
+const ReplaceObject = ({ newData = {}, currentData }) => {
+  return q.Merge(
+    q.ToObject(
+      q.Map(
+        GetObjectFields(currentData),
+        q.Lambda('field', [q.Var('field'), null])
+      )
+    ),
+    newData
+  )
+}
+
+module.exports = { GetObjectFields, ExtractValues, ReplaceObject }

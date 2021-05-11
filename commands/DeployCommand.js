@@ -27,11 +27,13 @@ class DeployCommand {
       collections = {},
       functions = {},
       indexes = {},
+      roles = {},
       client: clientConfig,
     } = this.config
     try {
       const result = await deploy({
         clientConfig,
+        roles: Object.values(roles).map((role) => this.roleAdapter(role)),
         collections: Object.values(collections),
         functions: Object.values(functions).map((fn) =>
           this.functionAdapter(fn)
@@ -45,6 +47,7 @@ class DeployCommand {
         ? result.forEach(this.logger.success)
         : this.logger.success('Schema up to date')
     } catch (error) {
+      console.info(error)
       this.logger.error(error)
     }
   }
@@ -53,6 +56,7 @@ class DeployCommand {
     try {
       return {
         ...fn,
+        role: fn.role ? q.Role(fn.role) : null,
         body: baseEvalFqlQuery(fn.body),
       }
     } catch (error) {
@@ -77,23 +81,23 @@ class DeployCommand {
   }
 
   indexSourceAdapter(source) {
-    const adapterSource = {
+    const adaptedSource = {
       collection: q.Collection(
         typeof source === 'string' ? source : source.collection
       ),
     }
 
     if (source.fields) {
-      adapterSource.fields = {}
+      adaptedSource.fields = {}
 
       Object.keys(source.fields).forEach((bindingKey) => {
-        adapterSource.fields[bindingKey] = baseEvalFqlQuery(
+        adaptedSource.fields[bindingKey] = baseEvalFqlQuery(
           source.fields[bindingKey]
         )
       })
     }
 
-    return adapterSource
+    return adaptedSource
   }
 
   indexValuesAdapter({ fields = [], bindings = [] }) {
@@ -115,6 +119,53 @@ class DeployCommand {
       ...fields.map((field) => ({ field: field.split('.') })),
       ...bindings.map((binding) => ({ binding })),
     ]
+  }
+
+  roleAdapter({ name, privileges, membership }) {
+    const adaptedRole = { name }
+
+    if (membership) {
+      adaptedRole.membership = (Array.isArray(membership)
+        ? membership
+        : [membership]
+      ).map((m) => {
+        return {
+          resource: q.Collection(typeof m === 'string' ? m : m.resource),
+          ...(m.predicate && { predicate: baseEvalFqlQuery(m.predicate) }),
+        }
+      })
+    }
+
+    const PrivilegesMap = {
+      collection: q.Collection,
+      index: q.Index,
+      function: q.Function,
+      collections: q.Collections,
+      databases: q.Databases,
+      indexes: q.Indexes,
+      roles: q.Roles,
+      functions: q.Functions,
+      keys: q.Keys,
+    }
+    adaptedRole.privileges = privileges.map((privilege) => {
+      const resourceType = Object.keys(privilege).find((key) =>
+        Object.keys(PrivilegesMap).includes(key)
+      )
+
+      const actions = Object.fromEntries(
+        Object.entries(privilege.actions).map(([key, value]) => [
+          key,
+          typeof value === 'boolean' ? value : baseEvalFqlQuery(value),
+        ])
+      )
+
+      return {
+        actions,
+        resource: PrivilegesMap[resourceType](privilege[resourceType]),
+      }
+    })
+
+    return adaptedRole
   }
 }
 

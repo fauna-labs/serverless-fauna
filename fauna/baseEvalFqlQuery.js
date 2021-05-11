@@ -1,13 +1,35 @@
 const { query } = require('faunadb')
 module.exports = (codes) => {
   return query.Query(
-    eval(
-      Object.keys(query).reduce(
-        (f, q) => f.split(`${q}(`).join(`query.${q}(`),
-        parseQuery(codes)
-      )
-    )
+    evalWithContext(query, parseQuery(codes))
+    // eval(
+    //   Object.keys(query).reduce(
+    //     (f, q) => f.split(`${q}(`).join(`query.${q}(`),
+    //     parseQuery(codes)
+    //   )
+    // )
   )
+}
+
+function getAllMatches(pattern, string) {
+  // make sure string is a String, and make sure pattern has the /g flag
+  String(string).match(new RegExp(pattern, 'g'))
+}
+
+// this pattern is far from robust
+const variablePattern = /[a-zA-Z$_][0-9a-zA-Z$_]*/
+
+function evalWithContext(context, expression) {
+  const variables = Object.keys(context)
+
+  // function and arguments are keywords, so I use abbreviated names
+  const func = new Function(...variables, `return (${expression})`)
+
+  const args = variables.map((arg) =>
+    Object.hasOwnProperty.call(context, arg) ? context[arg] : undefined
+  )
+
+  return func(...args)
 }
 
 function parseQuery(code) {

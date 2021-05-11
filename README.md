@@ -3,8 +3,7 @@
 A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
 
 ## TODO list
-- add `role` support to `function` (the role that should be used when the user-defined function is called)
-- implement `CreateRole` from serverless config
+- TBD `CreateKey`.
 - unit/integration tests
 
 ## Usage
@@ -89,7 +88,7 @@ Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/funct
     double:
       name: double
       body: ${file('./double.fql')}
-      # role: admin TODO: need implement
+      role: admin
       data:
         desc: double number
 
@@ -187,6 +186,89 @@ source:
   collection: Movies
   fields:
     is_current_year: ${file(./IsCurrentYear.fql)}
+```
+
+### Role configuration
+Can accept any param that accept CreateRole query.
+Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript)
+
+```yml
+  roles:
+    movies_reader:
+      name: movies_reader
+      privileges:
+        - collection: ${self:fauna.collections.movies.name}
+          actions:
+            read: true
+        - index: ${self:fauna.indexes.movies_by_type.name}
+          actions:
+            read: true
+        - function: ${self:fauna.functions.double.name}
+          actions:
+            read: true
+```
+
+#### Role schema privileges
+Read more about [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
+
+For schema privileges just specify field key without value
+```yml
+roles:
+  read_collections_and indexes:
+    name: read_collections
+    privileges:
+      - collections:
+        actions:
+          read: true
+      - indexes:
+        actions:
+          read: true
+```
+
+You can also pass action predicate
+
+```yml
+editors:
+  name: editors
+  membership:
+    - ${self:fauna.collections.scriptwriters.name}
+    - ${self:fauna.collections.directors.name}
+  privileges:
+    - collection: ${self:fauna.collections.movies.name}
+      actions:
+        read: true
+        write: ${file(./CanModifyMovie.fql)}
+```
+
+#### Role membership
+A membership configuration object dynamically defines which authenticated resources are members of a given role.
+
+```yml
+roles:
+  actor:
+    name: actor
+    membership: actor
+```
+
+Or as an array
+```yml
+roles:
+  actor:
+    name: participant
+    membership: 
+      - actor
+      - directors
+```
+
+You can also pass [membership object](https://docs.fauna.com/fauna/current/security/roles#mco)
+
+```yml
+roles:
+  only_active:
+    name: only_active
+    membership:
+      resource: ${self:fauna.collections.users.name}
+      predicate: ${file(./IsActiveUser.fql)}
 ```
 
 ### Deletion policy
