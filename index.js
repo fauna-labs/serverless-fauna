@@ -1,9 +1,9 @@
 'use strict'
 const Logger = require('./Logger')
+const DeployCommand = require('./commands/DeployCommand')
 
 class ServerlessFaunaPlugin {
   constructor(serverless, options) {
-    Object.assign(process.env, serverless.service.provider.environment)
     this.serverless = serverless
     this.config = this.serverless.service.initialServerlessConfig.fauna
     this.options = options
@@ -18,7 +18,7 @@ class ServerlessFaunaPlugin {
 
     this.hooks = {}
 
-    const cmdList = [require('./commands/DeployCommand')]
+    const cmdList = [DeployCommand]
     cmdList.forEach((CmdCls) => this.registerCommand(CmdCls))
   }
 
@@ -99,6 +99,7 @@ class ServerlessFaunaPlugin {
       type: 'object',
       properties: {
         name: { type: 'string' },
+        active: { type: 'boolean' },
         source: {
           oneOf: [
             { type: 'string' },
@@ -125,9 +126,21 @@ class ServerlessFaunaPlugin {
       additionalProperties: false,
     }
 
+    const clientProp = {
+      type: 'object',
+      properties: {
+        secret: { type: 'string' },
+        domain: { type: 'string' },
+        scheme: { type: 'string' },
+        port: { type: 'number' },
+      },
+      required: ['secret'],
+    }
+
     const faunaProp = {
       type: 'object',
       properties: {
+        client: clientProp,
         collections: {
           type: 'object',
           patternProperties: {
@@ -147,6 +160,7 @@ class ServerlessFaunaPlugin {
           },
         },
       },
+      required: ['client'],
       additionalProperties: false,
     }
 

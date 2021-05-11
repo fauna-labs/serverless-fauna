@@ -3,7 +3,6 @@
 A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
 
 ## TODO list
-- delete resource (consider `deletion_policy` of the resource)
 - add `role` support to `function` (the role that should be used when the user-defined function is called)
 - implement `CreateRole` from serverless config
 - unit/integration tests
@@ -26,6 +25,11 @@ $ yarn add serverless-fauna
 plugins:
   - serverless-fauna
 fauna:
+  client:
+    secret: ${env:FAUNA_ROOT_KEY}
+    # domain: db.fauna.com
+    # port: 433
+    # scheme: https
   collections:
     Movies: 
       name: Movies

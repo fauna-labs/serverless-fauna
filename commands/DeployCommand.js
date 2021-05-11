@@ -23,9 +23,15 @@ class DeployCommand {
   }
 
   async deploy() {
-    const { collections = {}, functions = {}, indexes = {} } = this.config
+    const {
+      collections = {},
+      functions = {},
+      indexes = {},
+      client: clientConfig,
+    } = this.config
     try {
       const result = await deploy({
+        clientConfig,
         collections: Object.values(collections),
         functions: Object.values(functions).map((fn) =>
           this.functionAdapter(fn)
@@ -39,7 +45,6 @@ class DeployCommand {
         ? result.forEach(this.logger.success)
         : this.logger.success('Schema up to date')
     } catch (error) {
-      console.info(error)
       this.logger.error(error)
     }
   }
