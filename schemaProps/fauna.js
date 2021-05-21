@@ -1,6 +1,6 @@
 const clientProp = require('./client')
 const collectionProp = require('./collection')
-const indexProp = require('./fauna')
+const indexProp = require('./index')
 const functionProp = require('./function')
 const roleProp = require('./role')
 
