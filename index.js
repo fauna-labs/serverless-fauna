@@ -13,7 +13,6 @@ class ServerlessFaunaPlugin {
       'fauna',
       faunaSchemaProperties
     )
-
     this.commands = {
       fauna: {
         commands: {},

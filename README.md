@@ -205,7 +205,7 @@ Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/funct
             read: true
         - function: ${self:fauna.functions.double.name}
           actions:
-            read: true
+            call: true
 ```
 
 #### Role schema privileges
@@ -269,6 +269,17 @@ roles:
     membership:
       resource: ${self:fauna.collections.users.name}
       predicate: ${file(./IsActiveUser.fql)}
+```
+Or an array of membership objects
+```yml
+roles:
+  only_active:
+    name: only_granted
+    membership:
+      - resource: ${self:fauna.collections.users.name}
+        predicate: ${file(./IsGranted.fql)}
+      - resource: ${self:fauna.collections.managers.name}
+        predicate: ${file(./IsGranted.fql)}
 ```
 
 ### Deletion policy

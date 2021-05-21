@@ -31,7 +31,8 @@ class DeployCommand {
       client: clientConfig,
     } = this.config
     try {
-      const result = await deploy({
+      this.logger.info('Schema updating in process...')
+      await deploy({
         clientConfig,
         roles: Object.values(roles).map((role) => this.roleAdapter(role)),
         collections: Object.values(collections),
@@ -41,13 +42,9 @@ class DeployCommand {
         indexes: Object.values(indexes).map((index) =>
           this.indexAdapter(index)
         ),
+        successLog: this.logger.success,
       })
-
-      return result.length
-        ? result.forEach(this.logger.success)
-        : this.logger.success('Schema up to date')
     } catch (error) {
-      console.info(error)
       this.logger.error(error)
     }
   }
@@ -56,7 +53,11 @@ class DeployCommand {
     try {
       return {
         ...fn,
-        role: fn.role ? q.Role(fn.role) : null,
+        role: fn.role
+          ? ['admin', 'server'].includes(fn.role)
+            ? fn.role
+            : q.Role(fn.role)
+          : null,
         body: baseEvalFqlQuery(fn.body),
       }
     } catch (error) {
@@ -125,9 +126,8 @@ class DeployCommand {
     const adaptedRole = { name }
 
     if (membership) {
-      adaptedRole.membership = (Array.isArray(membership)
-        ? membership
-        : [membership]
+      adaptedRole.membership = (
+        Array.isArray(membership) ? membership : [membership]
       ).map((m) => {
         return {
           resource: q.Collection(typeof m === 'string' ? m : m.resource),

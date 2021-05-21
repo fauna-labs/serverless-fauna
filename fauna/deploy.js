@@ -2,9 +2,15 @@ const { query: q, Expr } = require('faunadb')
 const getClient = require('./client')
 const { GetObjectFields, ExtractValues, ReplaceObject } = require('./utility')
 
-module.exports = ({ clientConfig, collections, indexes, functions, roles }) => {
+module.exports = ({
+  clientConfig,
+  collections,
+  indexes,
+  functions,
+  roles,
+  successLog,
+}) => {
   const client = getClient(clientConfig)
-
   const queries = [
     ...prepareQueries({ resources: collections, type: 'collection' }),
     ...prepareQueries({ resources: indexes, type: 'index' }),
@@ -15,15 +21,25 @@ module.exports = ({ clientConfig, collections, indexes, functions, roles }) => {
   return queries
     .reduce(
       (memo, next) =>
-        memo.then((result) =>
+        memo.then((schemaUpdated) =>
           client
             .query(next.query)
-            .then((qRes) => result.concat(qRes))
+            .then((qRes) => {
+              if (qRes) {
+                successLog(qRes)
+                return true
+              }
+              return schemaUpdated
+            })
             .catch((errResp) => handleError({ errResp, name: next.name }))
         ),
-      Promise.resolve([])
+      Promise.resolve()
     )
-    .then((result) => result.filter((r) => !!r))
+    .then((schemaUpdated) => {
+      if (!schemaUpdated) {
+        successLog('Schema up to date')
+      }
+    })
 }
 
 /**
@@ -194,10 +210,9 @@ const LogResult = ({ res, isExists, label }) =>
   )
 
 const handleError = ({ errResp, name }) => {
-  console.info(errResp)
   if (!errResp.requestResult) throw errResp
   const error = errResp.requestResult.responseContent.errors[0]
-
+  console.info(error)
   if (error.failures) {
     const failures = error.failures
       .map((f) => [`\`${f.field}\``, f.description].join(': '))
