@@ -1,4 +1,4 @@
-function Logger(serverless) {
+function Logger(cli) {
   const entity = 'Fauna'
   const levelColor = {
     info: 'yellow',
@@ -9,7 +9,7 @@ function Logger(serverless) {
     {},
     {
       get: (_, prop) => (msg) =>
-        serverless.cli.log(msg, entity, { color: levelColor[prop] }),
+        cli.log(msg, entity, { color: levelColor[prop] }),
     }
   )
 }

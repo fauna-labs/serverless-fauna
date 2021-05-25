@@ -1,4 +1,4 @@
-const deploy = require('../fauna/deploy')
+const faunaDeploy = require('../fauna/deploy')
 const { query: q } = require('faunadb')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
 
@@ -16,10 +16,18 @@ class DeployCommand {
     'fauna:deploy:deploy': this.deploy.bind(this),
   }
 
-  constructor({ config, faunaClient, logger }) {
+  register(...props) {
+    return new DeployCommand({
+      ...props,
+      faunaDeploy,
+    })
+  }
+
+  constructor({ config, faunaClient, logger, faunaDeploy }) {
     this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
+    this.faunaDeploy = faunaDeploy
   }
 
   async deploy() {
@@ -28,12 +36,11 @@ class DeployCommand {
       functions = {},
       indexes = {},
       roles = {},
-      client: clientConfig,
     } = this.config
     try {
       this.logger.info('Schema updating in process...')
-      await deploy({
-        clientConfig,
+      await this.faunaDeploy({
+        faunaClient: this.faunaClient,
         roles: Object.values(roles).map((role) => this.roleAdapter(role)),
         collections: Object.values(collections),
         functions: Object.values(functions).map((fn) =>

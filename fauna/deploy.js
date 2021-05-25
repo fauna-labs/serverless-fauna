@@ -1,16 +1,14 @@
 const { query: q, Expr } = require('faunadb')
-const getClient = require('./client')
 const { GetObjectFields, ExtractValues, ReplaceObject } = require('./utility')
 
 module.exports = ({
-  clientConfig,
+  faunaClient,
   collections,
   indexes,
   functions,
   roles,
   successLog,
 }) => {
-  const client = getClient(clientConfig)
   const queries = [
     ...prepareQueries({ resources: collections, type: 'collection' }),
     ...prepareQueries({ resources: indexes, type: 'index' }),
@@ -22,7 +20,7 @@ module.exports = ({
     .reduce(
       (memo, next) =>
         memo.then((schemaUpdated) =>
-          client
+          faunaClient
             .query(next.query)
             .then((qRes) => {
               if (qRes) {
