@@ -1,13 +1,13 @@
-const { query: q, Expr } = require('faunadb')
+const { query: q } = require('faunadb')
 const { GetObjectFields, ExtractValues, ReplaceObject } = require('./utility')
 
 module.exports = ({
   faunaClient,
-  collections,
-  indexes,
-  functions,
-  roles,
   successLog,
+  collections = [],
+  indexes = [],
+  functions = [],
+  roles = [],
 }) => {
   const queries = [
     ...prepareQueries({ resources: collections, type: 'collection' }),
@@ -17,6 +17,7 @@ module.exports = ({
   ]
 
   return queries
+    .filter((q) => !!q)
     .reduce(
       (memo, next) =>
         memo.then((schemaUpdated) =>
@@ -37,6 +38,8 @@ module.exports = ({
       if (!schemaUpdated) {
         successLog('Schema up to date')
       }
+
+      return schemaUpdated
     })
 }
 
