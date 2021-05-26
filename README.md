@@ -4,7 +4,6 @@ A serverless plugin to easily describe Fauna infrastructure as a code. Plugins h
 
 ## TODO list
 - TBD `CreateKey`.
-- unit/integration tests
 
 ## Usage
 
