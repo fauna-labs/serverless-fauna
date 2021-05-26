@@ -1,4 +1,4 @@
-const faunaDeploy = require('../fauna/deploy')
+const DeployQueries = require('../fauna/DeployQueries')
 const { query: q } = require('faunadb')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
 
@@ -16,18 +16,10 @@ class DeployCommand {
     'fauna:deploy:deploy': this.deploy.bind(this),
   }
 
-  register(...props) {
-    return new DeployCommand({
-      ...props,
-      faunaDeploy,
-    })
-  }
-
-  constructor({ config, faunaClient, logger, faunaDeploy }) {
+  constructor({ config, faunaClient, logger }) {
     this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
-    this.faunaDeploy = faunaDeploy
   }
 
   async deploy() {
@@ -39,8 +31,7 @@ class DeployCommand {
     } = this.config
     try {
       this.logger.info('Schema updating in process...')
-      await this.faunaDeploy({
-        faunaClient: this.faunaClient,
+      const queries = DeployQueries({
         roles: Object.values(roles).map((role) => this.roleAdapter(role)),
         collections: Object.values(collections),
         functions: Object.values(functions).map((fn) =>
@@ -49,11 +40,41 @@ class DeployCommand {
         indexes: Object.values(indexes).map((index) =>
           this.indexAdapter(index)
         ),
-        successLog: this.logger.success,
       })
+
+      let isSchemaUpdated
+      for (const { query, name } of queries) {
+        await this.faunaClient
+          .query(query)
+          .then((resp) => {
+            if (resp) {
+              isSchemaUpdated = true
+              this.logger.success(resp)
+            }
+          })
+          .catch((errResp) => this.handleQueryError({ errResp, name }))
+      }
+
+      if (!isSchemaUpdated) {
+        this.logger.success('Schema up to date')
+      }
     } catch (error) {
       this.logger.error(error)
     }
+  }
+
+  handleQueryError({ errResp, name }) {
+    if (!errResp.requestResult) throw errResp
+    const error = errResp.requestResult.responseContent.errors[0]
+    console.info(error)
+    if (error.failures) {
+      const failures = error.failures
+        .map((f) => [`\`${f.field}\``, f.description].join(': '))
+        .join('; ')
+      throw new Error([name, failures].join(' => '))
+    }
+
+    throw new Error([name, error.description].join(' => '))
   }
 
   functionAdapter(fn) {
@@ -130,49 +151,53 @@ class DeployCommand {
   }
 
   roleAdapter({ name, privileges, membership }) {
-    const adaptedRole = { name }
+    try {
+      const adaptedRole = { name }
 
-    if (membership) {
-      adaptedRole.membership = (
-        Array.isArray(membership) ? membership : [membership]
-      ).map((m) => {
+      if (membership) {
+        adaptedRole.membership = (
+          Array.isArray(membership) ? membership : [membership]
+        ).map((m) => {
+          return {
+            resource: q.Collection(typeof m === 'string' ? m : m.resource),
+            ...(m.predicate && { predicate: baseEvalFqlQuery(m.predicate) }),
+          }
+        })
+      }
+
+      const PrivilegesMap = {
+        collection: q.Collection,
+        index: q.Index,
+        function: q.Function,
+        collections: q.Collections,
+        databases: q.Databases,
+        indexes: q.Indexes,
+        roles: q.Roles,
+        functions: q.Functions,
+        keys: q.Keys,
+      }
+      adaptedRole.privileges = privileges.map((privilege) => {
+        const resourceType = Object.keys(privilege).find((key) =>
+          Object.keys(PrivilegesMap).includes(key)
+        )
+
+        const actions = Object.fromEntries(
+          Object.entries(privilege.actions).map(([key, value]) => [
+            key,
+            typeof value === 'boolean' ? value : baseEvalFqlQuery(value),
+          ])
+        )
+
         return {
-          resource: q.Collection(typeof m === 'string' ? m : m.resource),
-          ...(m.predicate && { predicate: baseEvalFqlQuery(m.predicate) }),
+          actions,
+          resource: PrivilegesMap[resourceType](privilege[resourceType]),
         }
       })
+
+      return adaptedRole
+    } catch (error) {
+      throw new Error(`role.${role.name}: ${error.message}`)
     }
-
-    const PrivilegesMap = {
-      collection: q.Collection,
-      index: q.Index,
-      function: q.Function,
-      collections: q.Collections,
-      databases: q.Databases,
-      indexes: q.Indexes,
-      roles: q.Roles,
-      functions: q.Functions,
-      keys: q.Keys,
-    }
-    adaptedRole.privileges = privileges.map((privilege) => {
-      const resourceType = Object.keys(privilege).find((key) =>
-        Object.keys(PrivilegesMap).includes(key)
-      )
-
-      const actions = Object.fromEntries(
-        Object.entries(privilege.actions).map(([key, value]) => [
-          key,
-          typeof value === 'boolean' ? value : baseEvalFqlQuery(value),
-        ])
-      )
-
-      return {
-        actions,
-        resource: PrivilegesMap[resourceType](privilege[resourceType]),
-      }
-    })
-
-    return adaptedRole
   }
 }
 

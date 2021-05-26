@@ -28,7 +28,7 @@ class ServerlessFaunaPlugin {
   }
 
   registerCommand(CmdCls) {
-    const cmd = CmdCls.register({
+    const cmd = new CmdCls({
       faunaClient: this.faunaClient,
       serverless: this.serverless,
       config: this.config,

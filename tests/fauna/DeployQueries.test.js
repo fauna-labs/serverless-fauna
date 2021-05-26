@@ -1,9 +1,20 @@
 const fauna = require('faunadb')
-const faunaDeploy = require('../../fauna/deploy')
+const DeployQueries = require('../../fauna/DeployQueries')
 const getClient = require('../../fauna/client')
 const config = require('../config')
 const { Paginate } = require('faunadb')
 const { query: q, values } = fauna
+
+async function faunaDeploy({ testClient, config }) {
+  let isSchemaUpdated
+  for (const { query } of DeployQueries(config)) {
+    await testClient.query(query).then((resp) => {
+      if (resp) isSchemaUpdated = true
+    })
+  }
+
+  return { isSchemaUpdated }
+}
 
 describe('Fauna deploy', () => {
   const rootClient = getClient(config)
@@ -75,13 +86,12 @@ describe('Fauna deploy', () => {
   test(
     'initiate schema',
     async () => {
-      const resp = await faunaDeploy({
-        faunaClient: testClient,
-        successLog: jest.fn(),
-        ...serverlessConfig,
+      const { isSchemaUpdated } = await faunaDeploy({
+        testClient,
+        config: serverlessConfig,
       })
 
-      expect(resp, 'schema updated').toBeTruthy()
+      expect(isSchemaUpdated, 'schema updated').toBeTruthy()
 
       const { collections, indexes, functions, roles } = await testClient.query(
         q.Let(
@@ -169,42 +179,13 @@ describe('Fauna deploy', () => {
   )
 
   test('schema up to date', async () => {
-    const resp = await faunaDeploy({
-      faunaClient: testClient,
-      successLog: jest.fn(),
-      ...serverlessConfig,
+    const { isSchemaUpdated } = await faunaDeploy({
+      testClient,
+      config: serverlessConfig,
     })
 
-    expect(resp).toBeFalsy()
+    expect(isSchemaUpdated).toBeFalsy()
   })
-
-  test(
-    'handle error',
-    async () => {
-      const errorConfig = {
-        ...serverlessConfig,
-        indexes: [
-          {
-            ...serverlessConfig.indexes[0],
-            source: [{ collection: q.Collection('not_exists') }],
-          },
-        ],
-      }
-
-      await expect(() =>
-        faunaDeploy({
-          faunaClient: testClient,
-          successLog: jest.fn(),
-          ...errorConfig,
-        })
-      ).rejects.toEqual(
-        new Error(
-          'upsert.index.user_by_email => Field source,terms,values are readonly'
-        )
-      )
-    },
-    3 * 60 * 1000
-  )
 
   test(
     'update schema',
@@ -222,9 +203,8 @@ describe('Fauna deploy', () => {
       }
 
       await faunaDeploy({
-        faunaClient: testClient,
-        successLog: jest.fn(),
-        ...updateConfig,
+        testClient,
+        config: updateConfig,
       })
 
       const functions = await testClient.query(
@@ -254,9 +234,8 @@ describe('Fauna deploy', () => {
     const { collections, ...deleteSchema } = serverlessConfig
 
     await faunaDeploy({
-      faunaClient: testClient,
-      successLog: jest.fn(),
-      ...deleteSchema,
+      testClient,
+      config: deleteSchema,
     })
 
     const resp = await testClient.query(

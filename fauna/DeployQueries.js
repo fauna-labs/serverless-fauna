@@ -2,8 +2,6 @@ const { query: q } = require('faunadb')
 const { GetObjectFields, ExtractValues, ReplaceObject } = require('./utility')
 
 module.exports = ({
-  faunaClient,
-  successLog,
   collections = [],
   indexes = [],
   functions = [],
@@ -16,31 +14,7 @@ module.exports = ({
     ...prepareQueries({ resources: roles, type: 'role' }),
   ]
 
-  return queries
-    .filter((q) => !!q)
-    .reduce(
-      (memo, next) =>
-        memo.then((schemaUpdated) =>
-          faunaClient
-            .query(next.query)
-            .then((qRes) => {
-              if (qRes) {
-                successLog(qRes)
-                return true
-              }
-              return schemaUpdated
-            })
-            .catch((errResp) => handleError({ errResp, name: next.name }))
-        ),
-      Promise.resolve()
-    )
-    .then((schemaUpdated) => {
-      if (!schemaUpdated) {
-        successLog('Schema up to date')
-      }
-
-      return schemaUpdated
-    })
+  return queries.filter((q) => !!q)
 }
 
 /**
@@ -209,20 +183,6 @@ const LogResult = ({ res, isExists, label }) =>
     ),
     null
   )
-
-const handleError = ({ errResp, name }) => {
-  if (!errResp.requestResult) throw errResp
-  const error = errResp.requestResult.responseContent.errors[0]
-  console.info(error)
-  if (error.failures) {
-    const failures = error.failures
-      .map((f) => [`\`${f.field}\``, f.description].join(': '))
-      .join('; ')
-    throw new Error([name, failures].join(' => '))
-  }
-
-  throw new Error([name, error.description].join(' => '))
-}
 
 const ParamsMapByResourceType = {
   index: {
