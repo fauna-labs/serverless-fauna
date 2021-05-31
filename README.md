@@ -2,12 +2,24 @@
 
 A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
 
-## TODO list
-- TBD `CreateKey`.
+- [Serverless Fauna](#serverless-fauna)
+  - [Installation](#installation)
+  - [Commands](#commands)
+  - [Configuration](#configuration)
+    - [Collection configuration](#collection-configuration)
+    - [Function configuration](#function-configuration)
+    - [Index configuration](#index-configuration)
+      - [Index source](#index-source)
+      - [Index terms](#index-terms)
+      - [Index values](#index-values)
+      - [Index binding](#index-binding)
+    - [Role configuration](#role-configuration)
+      - [Role schema privileges](#role-schema-privileges)
+      - [Role membership](#role-membership)
+  - [Deletion policy](#deletion-policy)
 
-## Usage
 
-### Installation
+## Installation
 
 ```bash
 $ npm install serverless-fauna --save-dev
@@ -17,7 +29,17 @@ or using yarn
 $ yarn add serverless-fauna
 ```
 
-### Configuration
+## Commands 
+The plugin listens hooks from default serverless command and run his own logic
+
+| command    | description                                                                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| sls deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
+| sls remove | sync Fauna resources created by plugin [read more about deleting policy](#deleting_policy)                                                     |
+
+If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `sls fauna deploy`)
+
+## Configuration
 
 ```yaml
 plugins:
@@ -281,14 +303,25 @@ roles:
         predicate: ${file(./IsGranted.fql)}
 ```
 
-### Deletion policy
-Plugin keep sync between serverless configuration and current Fauna state. Therefore, plugin will remove all resources that currently exists at the Fauna but not declared at configuration would be removed. However, there are some resources that you absolutely do not want getting deleted.
-You can set `deletion_policy` of `data` field to `retain`. If entity has this deletion policy, plugin would not delete it.
+## Deletion policy
+Plugin keeps sync between serverless configuration and the current Fauna state. Therefore, the plugin will remove all resources that currently exist at the Fauna but not declared at configuration would be removed. However, there are some resources that you absolutely do not want get deleted.
+You can set `deletion_policy` to `retain`. (default `destroy`) to the top level `fauna` configuration
+In example below, Fauna resources would not be deleted
 
 ```yaml
+fauna: 
+  deleting_policy: retain
+```
+
+In spite of property `deleting_policy` specified at the top level, resource level property has a higher priority. Therefore, with the following configuration collection `logs` would be removed and the rest of resources will be saved
+
+```yaml
+fauna:
+  deleting_policy: retain
 collections:
   Movies: 
     name: Movies
-    data: 
-      deletion_policy: retain
+  logs:
+    name: logs
+    deleting_policy: destroy
 ```

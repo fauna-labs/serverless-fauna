@@ -10,6 +10,7 @@ module.exports = {
   additionalProperties: false,
   properties: {
     client: clientProp,
+    deletion_policy: { type: 'string' },
     collections: {
       type: 'object',
       patternProperties: {
