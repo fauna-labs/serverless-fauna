@@ -1,6 +1,7 @@
 'use strict'
 const Logger = require('./Logger')
 const DeployCommand = require('./commands/DeployCommand')
+const RemoveCommand = require('./commands/RemoveCommand')
 const faunaSchemaProperties = require('./schemaProps/fauna')
 const getClient = require('./fauna/client')
 
@@ -23,7 +24,7 @@ class ServerlessFaunaPlugin {
 
     this.hooks = {}
 
-    const cmdList = [DeployCommand]
+    const cmdList = [DeployCommand, RemoveCommand]
     cmdList.forEach((CmdCls) => this.registerCommand(CmdCls))
   }
 

@@ -1,5 +1,6 @@
 const DeployQueries = require('../fauna/DeployQueries')
 const { query: q } = require('faunadb')
+const { ResourceMap } = require('../fauna/utility')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
 
 class DeployCommand {
@@ -20,6 +21,10 @@ class DeployCommand {
     this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
+    this.defaultMetadata = {
+      created_by_serverless_plugin: true,
+      deletion_policy: config.deletion_policy || 'destroy',
+    }
   }
 
   async deploy() {
@@ -33,7 +38,9 @@ class DeployCommand {
       this.logger.info('Schema updating in process...')
       const queries = DeployQueries({
         roles: Object.values(roles).map((role) => this.roleAdapter(role)),
-        collections: Object.values(collections),
+        collections: Object.values(collections).map((collection) =>
+          this.collectionAdapter(collection)
+        ),
         functions: Object.values(functions).map((fn) =>
           this.functionAdapter(fn)
         ),
@@ -66,7 +73,6 @@ class DeployCommand {
   handleQueryError({ errResp, name }) {
     if (!errResp.requestResult) throw errResp
     const error = errResp.requestResult.responseContent.errors[0]
-    console.info(error)
     if (error.failures) {
       const failures = error.failures
         .map((f) => [`\`${f.field}\``, f.description].join(': '))
@@ -77,10 +83,22 @@ class DeployCommand {
     throw new Error([name, error.description].join(' => '))
   }
 
+  mergeMetadata(data = {}) {
+    return { ...this.defaultMetadata, ...data }
+  }
+
+  collectionAdapter(collection) {
+    return {
+      ...collection,
+      data: this.mergeMetadata(collection.data),
+    }
+  }
+
   functionAdapter(fn) {
     try {
       return {
         ...fn,
+        data: this.mergeMetadata(fn.data),
         role: fn.role
           ? ['admin', 'server'].includes(fn.role)
             ? fn.role
@@ -97,6 +115,7 @@ class DeployCommand {
     try {
       return {
         ...index,
+        data: this.mergeMetadata(index.data),
         source: (Array.isArray(index.source)
           ? index.source
           : [index.source]
@@ -150,9 +169,9 @@ class DeployCommand {
     ]
   }
 
-  roleAdapter({ name, privileges, membership }) {
+  roleAdapter({ privileges, membership, ...role }) {
     try {
-      const adaptedRole = { name }
+      const adaptedRole = { ...role, data: this.mergeMetadata(role.data) }
 
       if (membership) {
         adaptedRole.membership = (
@@ -165,20 +184,9 @@ class DeployCommand {
         })
       }
 
-      const PrivilegesMap = {
-        collection: q.Collection,
-        index: q.Index,
-        function: q.Function,
-        collections: q.Collections,
-        databases: q.Databases,
-        indexes: q.Indexes,
-        roles: q.Roles,
-        functions: q.Functions,
-        keys: q.Keys,
-      }
       adaptedRole.privileges = privileges.map((privilege) => {
         const resourceType = Object.keys(privilege).find((key) =>
-          Object.keys(PrivilegesMap).includes(key)
+          Object.keys(ResourceMap).includes(key)
         )
 
         const actions = Object.fromEntries(
@@ -190,7 +198,7 @@ class DeployCommand {
 
         return {
           actions,
-          resource: PrivilegesMap[resourceType](privilege[resourceType]),
+          resource: ResourceMap[resourceType](privilege[resourceType]),
         }
       })
 

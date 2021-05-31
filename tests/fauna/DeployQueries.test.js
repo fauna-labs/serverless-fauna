@@ -1,9 +1,8 @@
-const fauna = require('faunadb')
+const { query: q, values, Expr } = require('faunadb')
 const DeployQueries = require('../../fauna/DeployQueries')
 const getClient = require('../../fauna/client')
 const config = require('../config')
-const { Paginate } = require('faunadb')
-const { query: q, values } = fauna
+const { configForDeploy, defaultData } = require('../test.data')
 
 async function faunaDeploy({ testClient, config }) {
   let isSchemaUpdated
@@ -21,7 +20,6 @@ describe('Fauna deploy', () => {
   let testClient
   let keyRef
   let dbRef
-  const BaseFQL = q.Lambda('ref', q.Var('ref'))
   const BaseFQLValue = new values.Query({
     lambda: 'ref',
     expr: {
@@ -29,35 +27,6 @@ describe('Fauna deploy', () => {
     },
     api_version: '4',
   })
-
-  const serverlessConfig = {
-    collections: [
-      { name: 'users', data: { deletion_policy: 'retain' } },
-      { name: 'logs' },
-    ],
-    indexes: [
-      {
-        name: 'user_by_email',
-        source: [{ collection: q.Collection('users') }],
-        terms: [{ field: ['data', 'test'] }],
-      },
-    ],
-    functions: [{ name: 'register', body: q.Query(BaseFQL), role: null }],
-    roles: [
-      {
-        name: 'customer',
-        membership: [
-          {
-            resource: q.Collection('users'),
-            predicate: q.Query(BaseFQL),
-          },
-        ],
-        privileges: [
-          { resource: q.Index('user_by_email'), actions: { read: true } },
-        ],
-      },
-    ],
-  }
 
   beforeAll(async () => {
     const response = await rootClient.query(
@@ -88,7 +57,7 @@ describe('Fauna deploy', () => {
     async () => {
       const { isSchemaUpdated } = await faunaDeploy({
         testClient,
-        config: serverlessConfig,
+        config: configForDeploy,
       })
 
       expect(isSchemaUpdated, 'schema updated').toBeTruthy()
@@ -114,12 +83,14 @@ describe('Fauna deploy', () => {
           history_days: 30,
           name: 'users',
           data: {
+            ...defaultData,
             deletion_policy: 'retain',
           },
         },
         {
           history_days: 30,
           name: 'logs',
+          data: defaultData,
         },
       ])
 
@@ -128,6 +99,7 @@ describe('Fauna deploy', () => {
           active: true,
           serialized: true,
           name: 'user_by_email',
+          data: defaultData,
           source: [
             {
               collection: new values.Ref(
@@ -148,6 +120,7 @@ describe('Fauna deploy', () => {
       expect(functions.data.map(omitDynamicFields), 'functions').toEqual([
         {
           name: 'register',
+          data: defaultData,
           body: BaseFQLValue,
         },
       ])
@@ -155,6 +128,7 @@ describe('Fauna deploy', () => {
       expect(roles.data.map(omitDynamicFields), 'roles').toEqual([
         {
           name: 'customer',
+          data: defaultData,
           membership: [
             {
               resource: new values.Ref('users', new values.Ref('collections')),
@@ -181,7 +155,7 @@ describe('Fauna deploy', () => {
   test('schema up to date', async () => {
     const { isSchemaUpdated } = await faunaDeploy({
       testClient,
-      config: serverlessConfig,
+      config: configForDeploy,
     })
 
     expect(isSchemaUpdated).toBeFalsy()
@@ -191,7 +165,7 @@ describe('Fauna deploy', () => {
     'update schema',
     async () => {
       const updateConfig = {
-        ...serverlessConfig,
+        ...configForDeploy,
         functions: [
           {
             name: 'register',
@@ -231,7 +205,7 @@ describe('Fauna deploy', () => {
   )
 
   test('delete schema', async () => {
-    const { collections, ...deleteSchema } = serverlessConfig
+    const { collections, ...deleteSchema } = configForDeploy
 
     await faunaDeploy({
       testClient,
@@ -246,11 +220,10 @@ describe('Fauna deploy', () => {
     expect(resp.data[0].data.deletion_policy).toEqual('retain')
   })
 
-  afterAll(async () => {
-    await rootClient.query(q.Do(q.Delete(keyRef), q.Delete(dbRef)))
-  })
+  // afterAll(async () => {
+  //   await rootClient.query(q.Do(q.Delete(keyRef), q.Delete(dbRef)))
+  // })
 })
-
 function randomString(prefix) {
   var rand = ((Math.random() * 0xffffff) << 0).toString(16)
   return (prefix || '') + rand

@@ -22,4 +22,55 @@ const ReplaceObject = ({ newData = {}, currentData }) => {
   )
 }
 
-module.exports = { GetObjectFields, ExtractValues, ReplaceObject }
+const GetAllResourcesRefs = () =>
+  q.Let(
+    {
+      collections: q.Select(['data'], q.Paginate(q.Collections()), {}),
+      indexes: q.Select(['data'], q.Paginate(q.Indexes()), {}),
+      functions: q.Select(['data'], q.Paginate(q.Functions()), {}),
+      roles: q.Select(['data'], q.Paginate(q.Roles()), {}),
+    },
+    q.Union(
+      q.Var('indexes'),
+      q.Var('collections'),
+      q.Var('functions'),
+      q.Var('roles')
+    )
+  )
+
+const FilterServerlessResourceWithDestroyPolicy = ({
+  resources,
+  CustomFilter,
+}) => {
+  return q.Filter(resources, (resource) =>
+    q.And([
+      q.Select(['data', 'created_by_serverless_plugin'], resource, false),
+      q.Equals(
+        q.Select(['data', 'deletion_policy'], resource, 'destroy'),
+        'destroy'
+      ),
+      CustomFilter ? CustomFilter(resource) : true,
+    ])
+  )
+}
+
+const ResourceMap = {
+  collection: q.Collection,
+  index: q.Index,
+  function: q.Function,
+  collections: q.Collections,
+  databases: q.Databases,
+  indexes: q.Indexes,
+  roles: q.Roles,
+  functions: q.Functions,
+  keys: q.Keys,
+}
+
+module.exports = {
+  FilterServerlessResourceWithDestroyPolicy,
+  GetObjectFields,
+  ExtractValues,
+  ReplaceObject,
+  ResourceMap,
+  GetAllResourcesRefs,
+}

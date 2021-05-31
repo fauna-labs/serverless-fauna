@@ -1,5 +1,10 @@
-const { query: q } = require('faunadb')
-const { GetObjectFields, ExtractValues, ReplaceObject } = require('./utility')
+const { query: q, Expr } = require('faunadb')
+const {
+  GetObjectFields,
+  ExtractValues,
+  ReplaceObject,
+  FilterServerlessResourceWithDestroyPolicy,
+} = require('./utility')
 
 module.exports = ({
   collections = [],
@@ -18,7 +23,7 @@ module.exports = ({
 }
 
 /**
- * Delete resources that not specified at configuration (unless resource has deleting_policy: retain)
+ * Delete resources that not specified at configuration (unless resource has deletion_policy: retain)
  */
 const DeleteResourcesIfNotInConfiguration = ({
   label,
@@ -51,29 +56,17 @@ const DeleteResourcesIfNotInConfiguration = ({
 }
 
 const FilterResourceToBeDeleted = ({ ResourceList, resources }) => {
-  return q.Filter(
-    q.Map(
-      q.Select(['data'], q.Paginate(ResourceList())),
-      q.Lambda('resource', q.Get(q.Var('resource')))
+  return FilterServerlessResourceWithDestroyPolicy({
+    resources: q.Map(
+      q.Select(['data'], q.Paginate(ResourceList()), {}),
+      (ref) => q.Get(ref)
     ),
-    q.Lambda(
-      'resource',
-      q.And([
-        q.Not(
-          q.Equals(
-            q.Select(['data', 'deletion_policy'], q.Var('resource'), ''),
-            'retain'
-          )
-        ),
-        q.Equals(
-          q.Count(
-            q.Intersection([[q.Select(['ref'], q.Var('resource'))], resources])
-          ),
-          0
-        ),
-      ])
-    )
-  )
+    CustomFilter: (resource) =>
+      q.Equals(
+        q.Count(q.Intersection([[q.Select(['ref'], resource)], resources])),
+        0
+      ),
+  })
 }
 
 const UpsertResource = ({ label, resource, ref, CreateQuery, UpdateQuery }) => {
@@ -163,7 +156,7 @@ const SafeUpdateWithReadonly = ({ ref, readonly, resource }) => {
         q.Merge(q.Var('secureUpdateFields'), {
           data: ReplaceObject({
             newData: resource.data,
-            currentData: q.Select(['data'], q.Var('db')),
+            currentData: q.Select(['data'], q.Var('db'), {}),
           }),
         })
       ),
