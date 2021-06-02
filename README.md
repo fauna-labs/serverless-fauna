@@ -4,7 +4,7 @@ This repository contains unofficial patterns, sample code, or tools to help deve
 
 # Serverless Fauna
 
-A serverless plugin to easily describe Fauna infrastructure as a code. Plugins helps to keep Fauna up to serverless configuration and will create/update resources such as collections/indexes
+This serverless.com framework plugin enables easy "infrastructure as code" so that you can quickly spin up new Fauna databases as part of your tests and CI/CD pipelines. It helps keep your Fauna database in sync with a simple serverless configuration file ([usage example](https://github.com/fauna-labs/serverless-fauna-example/blob/main/serverless.yml)], by creating, updating, or deleting collections, indexes, roles, and user-defined functions.
 
 - [Serverless Fauna](#serverless-fauna)
   - [Installation](#installation)
@@ -34,7 +34,7 @@ $ yarn add serverless-fauna
 ```
 
 ## Commands 
-The plugin listens hooks from default serverless command and run his own logic
+This plugin listens to hooks from default serverless commands, and runs its own logic:
 
 | command    | description                                                                                                                                    |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -91,8 +91,7 @@ fauna:
           - ref
 ```
 ### Collection configuration
-Can accept any param that accept `CreateCollection` query.
-Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createcollection?lang=javascript#param_object)
+Accepts the same params as Fauna's [`CreateCollection` query](https://docs.fauna.com/fauna/current/api/fql/functions/createcollection?lang=javascript#param_object)
 
 ```yaml
 collections:
@@ -105,8 +104,7 @@ collections:
 ```
 
 ### Function configuration
-Can accept any param that accept `CreateFunction` query.
-Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createfunction?lang=javascript)
+Accepts the same params as Fauna's [`CreateFunction` query](https://docs.fauna.com/fauna/current/api/fql/functions/createfunction?lang=javascript)
 
 ```yaml
   functions:
@@ -120,10 +118,9 @@ Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/funct
 ```
 
 ### Index configuration
-Can accept any param that accept CreateIndex query.
-Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object)
+Accepts the same params as Fauna's [`CreateIndex` query](https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object).
 
-`terms`, `values` and `source` can be set only if index doesn't exists. If you change those configuration for existing index, plugin would throw an error when tried update it
+In Fauna's indexes, `terms`, `values` and `source` can only be set during index creation. If you try to modify those fields in an existing index, the plugin will throw an error. 
 
 ```yaml
 search_by_category_and_sort_by_year:
@@ -145,20 +142,20 @@ search_by_category_and_sort_by_year:
 ```
 
 #### Index source
-Index source could be a string and interpreted as collection reference
+The index source could be a string, and will be interpreted as collection reference.
 
 ```yaml
 source: Movie
 ```
 
-Or a source object. Read more about [source object](https://docs.fauna.com/fauna/current/api/fql/indexes?lang=javascript#source)
+Or it could be a [source object](https://docs.fauna.com/fauna/current/api/fql/indexes?lang=javascript#source)
 
 ```yaml
 source:
   collection: Movie
 ```
 
-Or an array of object
+Or it could be an array of objects:
 
 ```yaml
 source:
@@ -169,6 +166,8 @@ source:
 
 #### Index terms
 
+Index terms describe the fields that should be searchable.
+
 ```yaml
 terms:
   fields:
@@ -178,7 +177,7 @@ terms:
 ```
 
 #### Index values
-Index values looks pretty the same as terms, but has additional `reverse` field which determinate sort order
+Index values describe the fields returned, and have a similar structure to `terms`, but with an additional `reverse` field to define sort order.
 
 ```yaml
 values:
@@ -190,9 +189,9 @@ values:
 ```
 
 #### Index binding
-Index allow you to compute fields for a source while the document is being indexed.
-Read more about [index bindings](https://docs.fauna.com/fauna/current/tutorials/indexes/bindings)
-You can specify multiline fql
+[Index bindings](https://docs.fauna.com/fauna/current/tutorials/indexes/bindings) allow you to compute fields for a source while the document is being indexed.
+
+You can specify multiline FQL:
 
 ```yml
 source:
@@ -204,7 +203,7 @@ source:
         ToInteger(Select(['data', 'release_year'], Var('doc')))
       ])
 ```
-Or create file with `.fql` extension. We have [Fauna VSCode plugin](https://marketplace.visualstudio.com/items?itemName=fauna.fauna) to handle `.fql` files
+Or you can create file with the `.fql` extension, and use the [Fauna VSCode plugin](https://marketplace.visualstudio.com/items?itemName=fauna.fauna) to handle your `.fql` files.
 
 ```yml
 source:
@@ -214,8 +213,7 @@ source:
 ```
 
 ### Role configuration
-Can accept any param that accept CreateRole query.
-Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript)
+Accepts the same params as Fauna's [`CreateRole` query](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript).
 
 ```yml
   roles:
@@ -234,9 +232,9 @@ Read more about params [here](https://docs.fauna.com/fauna/current/api/fql/funct
 ```
 
 #### Role schema privileges
-Read more about [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
+Read more about the [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
 
-For schema privileges just specify field key without value
+For schema privileges, just specify a field key without a value:
 ```yml
 roles:
   read_collections_and indexes:
@@ -250,7 +248,7 @@ roles:
           read: true
 ```
 
-You can also pass action predicate
+You can also pass action predicates:
 
 ```yml
 editors:
@@ -268,6 +266,8 @@ editors:
 #### Role membership
 A membership configuration object dynamically defines which authenticated resources are members of a given role.
 
+It could be a string:
+
 ```yml
 roles:
   actor:
@@ -275,7 +275,7 @@ roles:
     membership: actor
 ```
 
-Or as an array
+Or it could be an array:
 ```yml
 roles:
   actor:
@@ -285,7 +285,7 @@ roles:
       - directors
 ```
 
-You can also pass [membership object](https://docs.fauna.com/fauna/current/security/roles#mco)
+Or you could pass the full [membership object](https://docs.fauna.com/fauna/current/security/roles#mco)
 
 ```yml
 roles:
@@ -295,7 +295,7 @@ roles:
       resource: ${self:fauna.collections.users.name}
       predicate: ${file(./IsActiveUser.fql)}
 ```
-Or an array of membership objects
+Or even an array of membership objects:
 ```yml
 roles:
   only_active:
@@ -308,16 +308,16 @@ roles:
 ```
 
 ## Deletion policy
-Plugin keeps sync between serverless configuration and the current Fauna state. Therefore, the plugin will remove all resources that currently exist at the Fauna but not declared at configuration would be removed. However, there are some resources that you absolutely do not want get deleted.
-You can set `deletion_policy` to `retain`. (default `destroy`) to the top level `fauna` configuration
-In example below, Fauna resources would not be deleted
+This plugin keeps your Fauna database in sync with your serverless configuration file. Therefore, the plugin will remove any resources that currently exist in Fauna, but are not declared in your serverless.com configuration file. 
+
+If there are resources that you absolutely do not want deleted, even though they might not be in your serverless.com configuration, you can set `deletion_policy` to `retain` (the default being `destroy`) in the top level `fauna` configuration. In example below, Fauna resources will not be deleted:
 
 ```yaml
 fauna: 
   deleting_policy: retain
 ```
 
-In spite of property `deleting_policy` specified at the top level, resource level property has a higher priority. Therefore, with the following configuration collection `logs` would be removed and the rest of resources will be saved
+Please note that if you specify the `deleting_policy` at both the top level and the resource level, the resource level `deleting_policy` will override it. For example, in the following configuration, the collection `logs` would be removed and the rest of the resources would be saved:
 
 ```yaml
 fauna:
