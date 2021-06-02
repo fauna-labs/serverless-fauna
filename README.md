@@ -4,7 +4,7 @@ This repository contains unofficial patterns, sample code, or tools to help deve
 
 # Serverless Fauna
 
-This serverless.com framework plugin enables easy "infrastructure as code" so that you can quickly spin up new Fauna databases as part of your tests and CI/CD pipelines. It helps keep your Fauna database in sync with a simple serverless configuration file ([usage example](https://github.com/fauna-labs/serverless-fauna-example/blob/main/serverless.yml)], by creating, updating, or deleting collections, indexes, roles, and user-defined functions.
+This [Serverless Framework][serverless-framework] plugin allows you to manage Fauna databases and resources directly in your `serverless.yml` file. You can integrate it in your test and CI/CD pipeliness to keep your databases in sync across multiple environments. Visit [this repository][serverless-fauna-example] for a sample application that demonstrates how to create, update, and delete collections, indexes, roles, and user-defined functions (UDFs).
 
 - [Serverless Fauna](#serverless-fauna)
   - [Installation](#installation)
@@ -36,12 +36,12 @@ $ yarn add serverless-fauna
 ## Commands 
 This plugin listens to hooks from default serverless commands, and runs its own logic:
 
-| command    | description                                                                                                                                    |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| sls deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
-| sls remove | sync Fauna resources created by plugin [read more about deleting policy](#deleting_policy)                                                     |
+| command | description |
+| --- | --- |
+| serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
+| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deleting_policy) |
 
-If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `sls fauna deploy`)
+If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `serverless fauna deploy`)
 
 ## Configuration
 
@@ -193,7 +193,7 @@ values:
 
 You can specify multiline FQL:
 
-```yml
+```yaml
 source:
   collection: Movies
   fields:
@@ -205,7 +205,7 @@ source:
 ```
 Or you can create file with the `.fql` extension, and use the [Fauna VSCode plugin](https://marketplace.visualstudio.com/items?itemName=fauna.fauna) to handle your `.fql` files.
 
-```yml
+```yaml
 source:
   collection: Movies
   fields:
@@ -215,7 +215,7 @@ source:
 ### Role configuration
 Accepts the same params as Fauna's [`CreateRole` query](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript).
 
-```yml
+```yaml
   roles:
     movies_reader:
       name: movies_reader
@@ -235,7 +235,7 @@ Accepts the same params as Fauna's [`CreateRole` query](https://docs.fauna.com/f
 Read more about the [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
 
 For schema privileges, just specify a field key without a value:
-```yml
+```yaml
 roles:
   read_collections_and indexes:
     name: read_collections
@@ -250,7 +250,7 @@ roles:
 
 You can also pass action predicates:
 
-```yml
+```yaml
 editors:
   name: editors
   membership:
@@ -268,7 +268,7 @@ A membership configuration object dynamically defines which authenticated resour
 
 It could be a string:
 
-```yml
+```yaml
 roles:
   actor:
     name: actor
@@ -276,7 +276,7 @@ roles:
 ```
 
 Or it could be an array:
-```yml
+```yaml
 roles:
   actor:
     name: participant
@@ -287,7 +287,7 @@ roles:
 
 Or you could pass the full [membership object](https://docs.fauna.com/fauna/current/security/roles#mco)
 
-```yml
+```yaml
 roles:
   only_active:
     name: only_active
@@ -296,7 +296,7 @@ roles:
       predicate: ${file(./IsActiveUser.fql)}
 ```
 Or even an array of membership objects:
-```yml
+```yaml
 roles:
   only_active:
     name: only_granted
@@ -337,3 +337,5 @@ Copyright Fauna, Inc. or its affiliates. All rights reserved. SPDX-License-Ident
 [fauna]: https://www.fauna.com/
 [fauna-labs]: https://github.com/fauna-labs
 [fauna-organization]: https://github.com/fauna
+[serverless-framework]: https://serverless.com
+[serverless-framework-example]: https://github.com/fauna-labs/serverless-fauna-example
