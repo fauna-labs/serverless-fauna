@@ -39,7 +39,7 @@ This plugin listens to hooks from default serverless commands, and runs its own 
 | command | description |
 | --- | --- |
 | serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
-| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deleting_policy) |
+| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy) |
 
 If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `serverless fauna deploy`)
 
@@ -314,20 +314,20 @@ If there are resources that you absolutely do not want deleted, even though they
 
 ```yaml
 fauna: 
-  deleting_policy: retain
+  deletion_policy: retain
 ```
 
-Please note that if you specify the `deleting_policy` at both the top level and the resource level, the resource level `deleting_policy` will override it. For example, in the following configuration, the collection `logs` would be removed and the rest of the resources would be saved:
+Please note that if you specify the `deletion_policy` at both the top level and the resource level, the resource level `deletion_policy` will override it. For example, in the following configuration, the collection `logs` would be removed and the rest of the resources would be saved:
 
 ```yaml
 fauna:
-  deleting_policy: retain
+  deletion_policy: retain
 collections:
   Movies: 
     name: Movies
   logs:
     name: logs
-    deleting_policy: destroy
+    deletion_policy: destroy
 ```
 
 ---
