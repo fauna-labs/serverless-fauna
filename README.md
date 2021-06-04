@@ -26,11 +26,11 @@ This [Serverless Framework][serverless-framework] plugin allows you to manage Fa
 ## Installation
 
 ```bash
-$ npm install serverless-fauna --save-dev
+$ npm install @fauna-labs/serverless-fauna --save-dev
 ```
 or using yarn
 ```bash
-$ yarn add serverless-fauna
+$ yarn add @fauna-labs/serverless-fauna
 ```
 
 ## Commands 
@@ -47,7 +47,7 @@ If you would like to run only the Fauna plugin logic, you can just add `fauna` b
 
 ```yaml
 plugins:
-  - serverless-fauna
+  - "@fauna-labs/serverless-fauna"
 fauna:
   client:
     secret: ${env:FAUNA_ROOT_KEY}
