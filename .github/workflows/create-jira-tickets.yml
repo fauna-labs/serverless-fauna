@@ -2,7 +2,7 @@ name: Create JIRA tickets
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopen]
 
   pull_request:
     types: [opened]
@@ -44,7 +44,7 @@ jobs:
         id: create
         uses: atlassian/gajira-create@master
         with:
-          project: DRVLABS
+          project: LABS
           issuetype: ${{steps.event.outputs.ISSUE_TYPE}}
           summary: ${{steps.event.outputs.SUMMARY}}
           description: ${{steps.event.outputs.DESC}}
