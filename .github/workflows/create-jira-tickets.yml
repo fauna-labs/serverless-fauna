@@ -28,12 +28,14 @@ jobs:
             echo "::set-output name=ISSUE_TYPE::Bug"
             echo "::set-output name=LABEL::issue"
             echo "::set-output name=USER::${{github.event.issue.user.login}}"
+            echo "::set-output name=REPO::${{github.event.issue.repository.name}}"
           elif [ ${{github.event.pull_request}} ]; then 
             echo "::set-output name=SUMMARY::PR #${{github.event.pull_request.number}} ${{github.event.pull_request.title}}"
             echo "::set-output name=DESC::${{github.event.pull_request.html_url}} \n\n ${{github.event.pull_request.body}}"
             echo "::set-output name=ISSUE_TYPE::Task"
             echo "::set-output name=LABEL::pr"
             echo "::set-output name=USER::${{github.event.pull_request.user.login}}"
+            echo "::set-output name=REPO::${{github.event.pull_request.repository.name}}"
           fi
       - name: Debug event
         run: |
@@ -48,7 +50,7 @@ jobs:
           issuetype: ${{steps.event.outputs.ISSUE_TYPE}}
           summary: ${{steps.event.outputs.SUMMARY}}
           description: ${{steps.event.outputs.DESC}}
-          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"], "components": [{ "name": "serverless-fauna" }]}'
+          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"], "repository": [{ "name": "serverless-fauna" }]}'
 
       - name: Set triage state
         if: ${{ steps.create.outputs.issue }}
