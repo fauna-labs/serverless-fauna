@@ -2,7 +2,7 @@ name: Create JIRA tickets
 
 on:
   issues:
-    types: [opened, reopen]
+    types: [opened, reopened]
 
   pull_request:
     types: [opened]
@@ -50,7 +50,7 @@ jobs:
           issuetype: ${{steps.event.outputs.ISSUE_TYPE}}
           summary: ${{steps.event.outputs.SUMMARY}}
           description: ${{steps.event.outputs.DESC}}
-          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"], "repository": [{ "name": "serverless-fauna" }]}'
+          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"], "repository": [{ "name": "${{steps.event.outputs.REPO}}" }]}'
 
       - name: Set triage state
         if: ${{ steps.create.outputs.issue }}
