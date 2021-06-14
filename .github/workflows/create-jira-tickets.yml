@@ -50,7 +50,7 @@ jobs:
           issuetype: ${{steps.event.outputs.ISSUE_TYPE}}
           summary: ${{steps.event.outputs.SUMMARY}}
           description: ${{steps.event.outputs.DESC}}
-          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"], "repository": [{ "name": "${{steps.event.outputs.REPO}}" }]}'
+          fields: '{"labels": ["github", "${{steps.event.outputs.LABEL}}"]}'
 
       - name: Set triage state
         if: ${{ steps.create.outputs.issue }}
