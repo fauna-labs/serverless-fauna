@@ -8,6 +8,7 @@ function getClient({ secret, domain, port, scheme }) {
   if (!clients[cacheKey]) {
     clients[cacheKey] = new Client({
       secret,
+      headers: { 'X-Fauna-Source': 'serverless-fauna' },
       ...(domain && { domain }),
       ...(port && { port }),
       ...(scheme && { scheme }),
