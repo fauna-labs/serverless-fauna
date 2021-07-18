@@ -63,7 +63,7 @@ fauna:
   functions:
     double:
       name: double
-      body: ${file('./double.fql')}
+      body: ${file(./double.fql)}
 
   indexes:
     movies_by_type:
@@ -110,7 +110,7 @@ Accepts the same params as Fauna's [`CreateFunction` query](https://docs.fauna.c
   functions:
     double:
       name: double
-      body: ${file('./double.fql')}
+      body: ${file(./double.fql)}
       role: admin
       data:
         desc: double number
