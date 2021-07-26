@@ -61,6 +61,8 @@ module.exports = {
         sourceObjProp,
       ],
     },
+    unique: { type: 'boolean' },
+    serialized: { type: 'boolean' },
     terms: termsProp,
     values: valuesProp,
     data: { type: 'object' },
