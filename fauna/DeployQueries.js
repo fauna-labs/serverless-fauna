@@ -15,8 +15,13 @@ module.exports = ({
   const queries = [
     ...prepareQueries({ resources: collections, type: 'collection' }),
     ...prepareQueries({ resources: indexes, type: 'index' }),
+    ...prepareUpsert({
+      resources: roles.createWithoutPrivileges,
+      type: 'role',
+      remapDataForCreate: (role) => ({ ...role, privileges: [] }),
+    }),
     ...prepareQueries({ resources: functions, type: 'function' }),
-    ...prepareQueries({ resources: roles, type: 'role' }),
+    ...prepareQueries({ resources: roles.update, type: 'role' }),
   ]
 
   return queries.filter((q) => !!q)
@@ -69,7 +74,16 @@ const FilterResourceToBeDeleted = ({ ResourceList, resources }) => {
   })
 }
 
-const UpsertResource = ({ label, resource, ref, CreateQuery, UpdateQuery }) => {
+const UpsertResource = ({
+  label,
+  resource,
+  ref,
+  CreateQuery,
+  UpdateQuery,
+  remapDataForCreate,
+}) => {
+  const data = remapDataForCreate ? remapDataForCreate(resource) : resource
+
   return q.Let(
     {
       name: q.Select(['name'], resource),
@@ -79,9 +93,9 @@ const UpsertResource = ({ label, resource, ref, CreateQuery, UpdateQuery }) => {
         UpdateIfChanged({
           ref,
           resource,
-          UpdateFql: UpdateQuery(ref, resource),
+          UpdateFql: UpdateQuery(ref, data),
         }),
-        CreateQuery(resource)
+        CreateQuery(data)
       ),
     },
     LogResult({
@@ -201,21 +215,13 @@ const ParamsMapByResourceType = {
   },
   role: { Ref: q.Role, ResourceList: q.Roles, CreateQuery: q.CreateRole },
 }
-const prepareQueries = ({ resources, type }) => {
+const prepareQueries = ({ resources, type, remapDataForCreate }) => {
   const params = ParamsMapByResourceType[type]
 
   return [
-    ...resources.map((resource) => ({
-      name: `upsert.${type}.${resource.name}`,
-      query: UpsertResource({
-        resource,
-        ref: params.Ref(resource.name),
-        label: type,
-        CreateQuery: params.CreateQuery,
-        UpdateQuery: params.UpdateQuery || q.Replace,
-      }),
-    })),
+    ...prepareUpsert({ resources, type, remapDataForCreate, log: true }),
     {
+      log: true,
       name: `delete.${type}`,
       query: DeleteResourcesIfNotInConfiguration({
         ResourceList: params.ResourceList,
@@ -224,4 +230,21 @@ const prepareQueries = ({ resources, type }) => {
       }),
     },
   ]
+}
+
+const prepareUpsert = ({ resources, type, remapDataForCreate, log }) => {
+  const params = ParamsMapByResourceType[type]
+
+  return resources.map((resource) => ({
+    name: `upsert.${type}.${resource.name}`,
+    log,
+    query: UpsertResource({
+      resource,
+      ref: params.Ref(resource.name),
+      label: type,
+      CreateQuery: params.CreateQuery,
+      UpdateQuery: params.UpdateQuery || q.Replace,
+      remapDataForCreate,
+    }),
+  }))
 }

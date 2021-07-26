@@ -4,10 +4,16 @@ const getClient = require('../../fauna/client')
 const config = require('../config')
 const { configForDeploy, defaultData } = require('../test.data')
 
-async function faunaDeploy({ testClient, config }) {
+async function faunaDeploy({ testClient, config, debugResp }) {
   let isSchemaUpdated
-  for (const { query } of DeployQueries(config)) {
+  for (const { query, name } of DeployQueries(config)) {
     await testClient.query(query).then((resp) => {
+      if (debugResp) {
+        console.info('----------' + name + '----------')
+        console.info(Expr.toString(query))
+        console.info(resp)
+        console.info('------------------------------')
+      }
       if (resp) isSchemaUpdated = true
     })
   }
@@ -29,10 +35,11 @@ describe('Fauna deploy', () => {
   })
 
   beforeAll(async () => {
+    const name = randomString('db_')
     const response = await rootClient.query(
       q.Let(
         {
-          database: q.CreateDatabase({ name: randomString('db_') }),
+          database: q.CreateDatabase({ name }),
           key: q.CreateKey({
             database: q.Select(['ref'], q.Var('database')),
             role: 'admin',
@@ -49,6 +56,7 @@ describe('Fauna deploy', () => {
     keyRef = response.keyRef
     dbRef = response.dbRef
 
+    console.info('--------- database created ', name)
     testClient = new getClient({ ...config, secret: response.secret })
   })
 
@@ -123,9 +131,39 @@ describe('Fauna deploy', () => {
           data: defaultData,
           body: BaseFQLValue,
         },
+        {
+          name: 'test_circular_dependency',
+          data: defaultData,
+          body: BaseFQLValue,
+          role: new values.Ref(
+            'test_circular_dependency',
+            new values.Ref('roles')
+          ),
+        },
       ])
 
       expect(roles.data.map(omitDynamicFields), 'roles').toEqual([
+        {
+          name: 'test_circular_dependency',
+          data: defaultData,
+          membership: [
+            {
+              resource: new values.Ref('users', new values.Ref('collections')),
+              predicate: BaseFQLValue,
+            },
+          ],
+          privileges: [
+            {
+              resource: new values.Ref(
+                'test_circular_dependency',
+                new values.Ref('functions')
+              ),
+              actions: {
+                call: true,
+              },
+            },
+          ],
+        },
         {
           name: 'customer',
           data: defaultData,
@@ -158,6 +196,8 @@ describe('Fauna deploy', () => {
       config: configForDeploy,
     })
 
+    console.info(isSchemaUpdated)
+
     expect(isSchemaUpdated).toBeFalsy()
   })
 
@@ -166,14 +206,16 @@ describe('Fauna deploy', () => {
     async () => {
       const updateConfig = {
         ...configForDeploy,
-        functions: [
-          {
-            name: 'register',
-            body: q.Query(q.Lambda('ref', q.Sum([q.Var('ref'), 1]))),
-            role: 'admin',
-            data: { update: 'test' },
-          },
-        ],
+        functions: configForDeploy.functions.map((fn) =>
+          fn.name === 'register'
+            ? {
+                name: 'register',
+                body: q.Query(q.Lambda('ref', q.Sum([q.Var('ref'), 1]))),
+                role: 'admin',
+                data: { update: 'test' },
+              }
+            : fn
+        ),
       }
 
       await faunaDeploy({
@@ -185,9 +227,11 @@ describe('Fauna deploy', () => {
         q.Map(q.Paginate(q.Functions()), (ref) => q.Get(ref))
       )
 
-      expect(functions.data.length).toEqual(1)
+      expect(functions.data.length).toEqual(2)
 
-      const { ts, ref, ...fn } = functions.data[0]
+      const { ts, ref, ...fn } = functions.data.find(
+        (fn) => fn.name === 'register'
+      )
       expect(fn).toEqual({
         name: 'register',
         role: 'admin',

@@ -36,8 +36,9 @@ class DeployCommand {
     } = this.config
     try {
       this.logger.info('Schema updating in process...')
+
       const queries = DeployQueries({
-        roles: Object.values(roles).map((role) => this.roleAdapter(role)),
+        roles: this.splitAndAdaptRoles(Object.values(roles)),
         collections: Object.values(collections).map((collection) =>
           this.collectionAdapter(collection)
         ),
@@ -50,12 +51,15 @@ class DeployCommand {
       })
 
       let isSchemaUpdated
-      for (const { query, name } of queries) {
+      for (const { query, name, log } of queries) {
         await this.faunaClient
           .query(query)
           .then((resp) => {
             if (resp) {
               isSchemaUpdated = true
+            }
+
+            if (resp && log) {
               this.logger.success(resp)
             }
           })
@@ -169,9 +173,42 @@ class DeployCommand {
     ]
   }
 
+  /**
+   * Fix https://github.com/fauna-labs/serverless-fauna/issues/7
+   * We might faced to circular dependency like role has privilege to call function.
+   * The function has role that has privileges to call it.
+   * To resolve this issue, we firstly create all roles
+   * @param {*} roles
+   * @returns
+   */
+  splitAndAdaptRoles(roles) {
+    const createWithoutPrivileges = []
+    const update = []
+
+    roles.forEach((role) => {
+      const hasFnPrivilege = role.privileges.find(
+        (privilege) => !!privilege.function
+      )
+
+      const adapted = this.roleAdapter(role)
+
+      if (hasFnPrivilege) {
+        createWithoutPrivileges.push(adapted)
+        update.push(adapted)
+      } else {
+        update.push(adapted)
+      }
+    })
+
+    return { createWithoutPrivileges, update }
+  }
+
   roleAdapter({ privileges, membership, ...role }) {
     try {
-      const adaptedRole = { ...role, data: this.mergeMetadata(role.data) }
+      const adaptedRole = {
+        ...role,
+        data: this.mergeMetadata(role.data),
+      }
 
       if (membership) {
         adaptedRole.membership = (

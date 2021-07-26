@@ -349,6 +349,34 @@ describe('DeployCommand', () => {
           expect(command.roleAdapter(input), label).toEqual(output)
         }
       })
+
+      test('splitAndAdaptRoles', () => {
+        const roles = [
+          {
+            name: 'noFn',
+            privileges: [
+              {
+                index: 'index',
+                actions: { read: true },
+              },
+            ],
+          },
+          {
+            name: 'withFn',
+            privileges: [
+              {
+                function: 'function',
+                actions: { call: true },
+              },
+            ],
+          },
+        ]
+        const adapted = roles.map((role) => command.roleAdapter(role))
+        expect(command.splitAndAdaptRoles(roles)).toEqual({
+          update: adapted,
+          createWithoutPrivileges: [adapted[1]],
+        })
+      })
     })
 
     describe('merge fauna & resource level deletion_policy', () => {
@@ -383,13 +411,16 @@ describe('DeployCommand', () => {
               source: [{ collection: q.Collection('test') }],
             },
           ],
-          roles: [
-            {
-              name: 'test',
-              data: { ...defaultData, deletion_policy: 'retain' },
-              privileges: [],
-            },
-          ],
+          roles: {
+            createWithoutPrivileges: [],
+            update: [
+              {
+                name: 'test',
+                data: { ...defaultData, deletion_policy: 'retain' },
+                privileges: [],
+              },
+            ],
+          },
           functions: [
             {
               name: 'test',
@@ -443,21 +474,24 @@ describe('DeployCommand', () => {
           role: null,
         },
       ],
-      roles: [
-        {
-          name: 'customer',
-          data: command.defaultMetadata,
-          membership: [
-            {
-              resource: q.Collection('users'),
-              predicate: q.Query(BaseFQL),
-            },
-          ],
-          privileges: [
-            { resource: q.Index('user_by_email'), actions: { read: true } },
-          ],
-        },
-      ],
+      roles: {
+        createWithoutPrivileges: [],
+        update: [
+          {
+            name: 'customer',
+            data: command.defaultMetadata,
+            membership: [
+              {
+                resource: q.Collection('users'),
+                predicate: q.Query(BaseFQL),
+              },
+            ],
+            privileges: [
+              { resource: q.Index('user_by_email'), actions: { read: true } },
+            ],
+          },
+        ],
+      },
     })
   })
 
