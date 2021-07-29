@@ -1,5 +1,5 @@
 {
-  "name": "@fauna-labs/serverless-plugin",
+  "name": "@fauna-labs/serverless-fauna",
   "version": "0.1.1",
   "description": "A plugin to define resources in your Fauna database directly within your Serverless Framework applications.",
   "main": "index.js",
