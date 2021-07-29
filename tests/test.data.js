@@ -23,22 +23,64 @@ const configForDeploy = {
   ],
   functions: [
     { name: 'register', data: defaultData, body: q.Query(BaseFQL), role: null },
-  ],
-  roles: [
     {
-      name: 'customer',
+      name: 'test_circular_dependency',
       data: defaultData,
-      membership: [
-        {
-          resource: q.Collection('users'),
-          predicate: q.Query(BaseFQL),
-        },
-      ],
-      privileges: [
-        { resource: q.Index('user_by_email'), actions: { read: true } },
-      ],
+      body: q.Query(BaseFQL),
+      role: q.Role('test_circular_dependency'),
     },
   ],
+  roles: {
+    createWithoutPrivileges: [
+      {
+        name: 'test_circular_dependency',
+        data: defaultData,
+        membership: [
+          {
+            resource: q.Collection('users'),
+            predicate: q.Query(BaseFQL),
+          },
+        ],
+        privileges: [
+          {
+            resource: q.Function('test_circular_dependency'),
+            actions: { call: true },
+          },
+        ],
+      },
+    ],
+    update: [
+      {
+        name: 'test_circular_dependency',
+        data: defaultData,
+        membership: [
+          {
+            resource: q.Collection('users'),
+            predicate: q.Query(BaseFQL),
+          },
+        ],
+        privileges: [
+          {
+            resource: q.Function('test_circular_dependency'),
+            actions: { call: true },
+          },
+        ],
+      },
+      {
+        name: 'customer',
+        data: defaultData,
+        membership: [
+          {
+            resource: q.Collection('users'),
+            predicate: q.Query(BaseFQL),
+          },
+        ],
+        privileges: [
+          { resource: q.Index('user_by_email'), actions: { read: true } },
+        ],
+      },
+    ],
+  },
 }
 
 module.exports = {
