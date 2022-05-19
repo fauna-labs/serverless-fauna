@@ -26,13 +26,39 @@ function parseQuery(code) {
   }
   const openBrackets = new Set(Object.keys(brackets))
   const closeBrackets = new Set(Object.values(brackets))
+  const newLines = new Set("\r", "\n")
   const queries = []
   const stack = []
   let start = 0
   let isOpening
+  let inLineComment
+  let inBlockComment
   code = code.trim()
 
   for (let i = 0; i < code.length; i++) {
+    if (inLineComment) {
+      if (newLines.has(code[i])) {
+        inLineComment = false
+      } else {
+        continue
+      }
+    }
+    if (inBlockComment) {
+      if (code[i] == "*" && code[i + 1] == "/") {
+        inBlockComment = false
+      } else {
+        continue
+      }
+    }
+
+    if (code[i] == "/") {
+      if (code[i + 1] == "/") {
+        inLineComment = true
+      } else if (code[i + 1] == "*") {
+        inBlockComment = true
+      }
+    }
+
     if (openBrackets.has(code[i])) {
       stack.push(code[i])
       isOpening = true
