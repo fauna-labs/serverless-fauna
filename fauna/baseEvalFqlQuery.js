@@ -26,11 +26,11 @@ function parseQuery(code) {
   }
   const openBrackets = new Set(Object.keys(brackets))
   const closeBrackets = new Set(Object.values(brackets))
-  const newLines = new Set("\r", "\n")
+  const newLines = new Set(["\r", "\n"])
   const queries = []
   const stack = []
-  let start = 0
-  let isOpening
+  let inQuery = false
+  let curQuery = ""
   let inLineComment
   let inBlockComment
   code = code.trim()
@@ -39,49 +39,60 @@ function parseQuery(code) {
     if (inLineComment) {
       if (newLines.has(code[i])) {
         inLineComment = false
-      } else {
-        continue
       }
+      continue
     }
     if (inBlockComment) {
       if (code[i] == "*" && code[i + 1] == "/") {
         inBlockComment = false
-      } else {
-        continue
+        i += 1
       }
+      continue
     }
 
     if (code[i] == "/") {
       if (code[i + 1] == "/") {
         inLineComment = true
+        i += 1
       } else if (code[i + 1] == "*") {
         inBlockComment = true
+        i += 1
       }
+      continue
     }
 
-    if (openBrackets.has(code[i])) {
-      stack.push(code[i])
-      isOpening = true
+    if (inQuery) {
+      curQuery += code[i]
+
+      if (openBrackets.has(code[i])) {
+        stack.push(code[i])
+      }
+
+      if (closeBrackets.has(code[i])) {
+        if (brackets[stack.pop()] !== code[i]) {
+          throw new Error(
+            `Unexpected closing bracket ${code[i]} at position: ${i + 1}`
+          )
+        } else if (stack.length === 0) {
+          console.log("out query")
+          queries.push(curQuery)
+          inQuery = false
+        }
+      }
+
+      continue
     }
 
-    if (closeBrackets.has(code[i]) && brackets[stack.pop()] !== code[i]) {
-      throw new Error(
-        `Unexpected closing bracket ${code[i]} at position: ${i + 1}`
-      )
-    }
-
-    if (stack.length === 0 && isOpening) {
-      queries.push(code.slice(start, i + 1))
-      start = i + 1
-      isOpening = false
+    if (code.substr(i, 6) === 'Lambda') {
+      console.log("in query")
+      inQuery = true
+      curQuery = 'Lambda'
+      i += 5
     }
   }
 
-  if (isOpening) {
-    throw new Error('Expect all opened brackets to be closed')
-  }
-
-  if (queries.length !== 1 || queries[0].substr(0, 6) !== 'Lambda')
+  console.log(queries)
+  if (queries.length !== 1)
     throw new Error('FQL must have 1 `Lambda` query')
 
   return queries[0]
