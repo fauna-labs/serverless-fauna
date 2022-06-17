@@ -74,7 +74,6 @@ function parseQuery(code) {
             `Unexpected closing bracket ${code[i]} at position: ${i + 1}`
           )
         } else if (stack.length === 0) {
-          console.log("out query")
           queries.push(curQuery)
           inQuery = false
         }
@@ -84,14 +83,12 @@ function parseQuery(code) {
     }
 
     if (code.substr(i, 6) === 'Lambda') {
-      console.log("in query")
       inQuery = true
       curQuery = 'Lambda'
       i += 5
     }
   }
 
-  console.log(queries)
   if (queries.length !== 1)
     throw new Error('FQL must have 1 `Lambda` query')
 
