@@ -1,0 +1,17 @@
+provider:
+  name: "aws"
+plugins:
+  # - "@fauna-labs/serverless-fauna"
+  - "."
+service: "foo"
+fauna:
+  client:
+    secret: secret
+    domain: localhost
+    port: 8443
+    scheme: http
+  collections:
+    Movies:
+      name: Movies
+      data:
+        some_data_key: some_data_value
