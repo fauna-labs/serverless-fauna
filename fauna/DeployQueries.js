@@ -15,7 +15,7 @@ module.exports = ({
   const queries = [
     ...prepareQueries({ resources: collections, type: 'collection' }),
     ...prepareQueries({ resources: indexes, type: 'index' }),
-    ...prepareUpsert({
+    prepareUpsert({
       resources: roles.createWithoutPrivileges,
       type: 'role',
       remapDataForCreate: (role) => ({ ...role, privileges: [] }),
@@ -219,7 +219,7 @@ const prepareQueries = ({ resources, type, remapDataForCreate }) => {
   const params = ParamsMapByResourceType[type]
 
   return [
-    ...prepareUpsert({ resources, type, remapDataForCreate, log: true }),
+    prepareUpsert({ resources, type, remapDataForCreate, log: true }),
     {
       log: true,
       name: `delete.${type}`,
@@ -235,16 +235,18 @@ const prepareQueries = ({ resources, type, remapDataForCreate }) => {
 const prepareUpsert = ({ resources, type, remapDataForCreate, log }) => {
   const params = ParamsMapByResourceType[type]
 
-  return resources.map((resource) => ({
-    name: `upsert.${type}.${resource.name}`,
-    log,
-    query: UpsertResource({
-      resource,
-      ref: params.Ref(resource.name),
-      label: type,
-      CreateQuery: params.CreateQuery,
-      UpdateQuery: params.UpdateQuery || q.Replace,
-      remapDataForCreate,
-    }),
+  const queries = resources.map((resource) => UpsertResource({
+    resource,
+    ref: params.Ref(resource.name),
+    label: type,
+    CreateQuery: params.CreateQuery,
+    UpdateQuery: params.UpdateQuery || q.Replace,
+    remapDataForCreate,
   }))
+
+  return {
+    name: `upsert.${type}`,
+    log,
+    query: q.Do(queries),
+  }
 }
