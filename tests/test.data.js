@@ -1,7 +1,19 @@
-const { query: q, Expr } = require('faunadb')
+const { query: q } = require('faunadb')
 
-const BaseFQL = q.Lambda('ref', q.Var('ref'))
-const BaseFQLString = Expr.toString(BaseFQL)
+const BaseFQL = q.Lambda('ref', [ q.Var('ref'), "this/is/not/a/comment" ])
+const BaseFQLString = `
+/*
+ * Leading comment block
+ */
+Lambda(
+  "ref", // Comment
+  // Comment
+  [
+    Var("ref" /* Inline comment */),
+    "this/is/not/a/comment"
+  ]
+)
+`
 
 const defaultData = {
   created_by_serverless_plugin: true,
