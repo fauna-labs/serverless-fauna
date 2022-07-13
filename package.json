@@ -1,6 +1,6 @@
 {
   "name": "@fauna-labs/serverless-fauna",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "A plugin to define resources in your Fauna database directly within your Serverless Framework applications.",
   "main": "index.js",
   "scripts": {
