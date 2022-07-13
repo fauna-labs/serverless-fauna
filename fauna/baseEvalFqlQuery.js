@@ -58,7 +58,10 @@ function parseQuery(code) {
         inBlockComment = true
         i += 1
       }
-      continue
+
+      if (inLineComment || inBlockComment) {
+        continue
+      }
     }
 
     if (inQuery) {

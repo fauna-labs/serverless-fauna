@@ -28,9 +28,7 @@ describe('Fauna deploy', () => {
   let dbRef
   const BaseFQLValue = new values.Query({
     lambda: 'ref',
-    expr: {
-      var: 'ref',
-    },
+    expr: [ { var: 'ref' }, "this/is/not/a/comment" ],
     api_version: '4',
   })
 
