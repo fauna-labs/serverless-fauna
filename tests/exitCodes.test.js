@@ -1,12 +1,18 @@
 const { promisify } = require('util');
 const spawn = require('child_process').spawn;
+const exec = promisify(require('child_process').exec);
 const assert = require('assert');
 
 // This test requires a local fauna container to be running.
 jest.setTimeout(30000);
-test('deploy exit codes', async () => {
-  const client = await start_db();
-  /*
+describe('deploy exit codes', () => {
+  beforeAll(async () => {
+    await start_db();
+  });
+  afterAll(async () => {
+    await stop_db();
+  });
+  // const client = get_client();
   // TODO: Make sure the db is empty here
   test('exit code 1', async () => {
     await assert.rejects(async () => await exec("sls deploy -c fail-invalid-secret.yml", { "cwd": `${__dirname}/config` }));
@@ -20,9 +26,6 @@ test('deploy exit codes', async () => {
     await exec("sls deploy -c valid.yml", { "cwd": `${__dirname}/config` });
   });
   // TODO: Make sure the db has a collection here
-  // TODO: Stop db in catch here
-  */
-  await stop_db();
 });
 
 async function start_db(docker) {
