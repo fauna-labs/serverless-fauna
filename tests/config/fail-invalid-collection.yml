@@ -11,11 +11,11 @@ fauna:
     port: 9001
     scheme: http
   collections:
-    Movies:
-      name: Movies
+    movies:
+      name: movies
       data:
         some_data_key: some_data_value
   indexes:
-    movies_ts:
-      name: movies_ts
+    movies_ts_1:
+      name: movies_ts_1
       source: movies but oh look i typoed right here so this is going to fail

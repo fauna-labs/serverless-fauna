@@ -12,7 +12,7 @@ describe('deploy exit codes', () => {
     await start_db();
   });
   afterAll(async () => {
-    // await stop_db();
+    await stop_db();
   });
   const client = get_client();
   test('exit code 1', async () => {
@@ -22,12 +22,17 @@ describe('deploy exit codes', () => {
   test('exit code 1', async () => {
     await assert.rejects(async () => await exec("sls deploy -c fail-invalid-collection.yml", { "cwd": `${__dirname}/config` }));
     // TODO: The database will be split here, so it won't actually be empty.
+    // This check should be enabled once the split database has been fixed.
     // await assert_empty(client);
+    await clear_database(client);
   });
   test('exit code 0', async () => {
     await exec("sls deploy -c valid.yml", { "cwd": `${__dirname}/config` });
     // TODO: Make sure the db has a collection here
-    await assert_empty(client);
+    await assert_matches(client, {
+      collections: [ "movies" ],
+      indexes: [ "movies_ts" ],
+    });
   });
 });
 
@@ -36,9 +41,30 @@ function get_client() {
 }
 
 async function assert_empty(client) {
-  let result = await client.query(q.Paginate(q.Collections()));
-  console.log(result);
-  expect(result.data).toEqual([]);
+  await assert_matches(client, {
+    collections: [],
+    indexes: [],
+  });
+}
+async function assert_matches(client, expected) {
+  let result = await client.query({
+    collections: q.Select("data", q.Map(
+      q.Paginate(q.Collections()),
+      q.Lambda("x", q.Select("name", q.Get(q.Var("x"))))
+    )),
+    indexes: q.Select("data", q.Map(
+      q.Paginate(q.Indexes()),
+      q.Lambda("x", q.Select("name", q.Get(q.Var("x"))))
+    )),
+  });
+  assert.deepEqual(result, expected);
+}
+async function clear_database(client) {
+  // Deleting collections will also delete all indexes.
+  await client.query(q.Map(
+    q.Paginate(q.Collections()),
+    q.Lambda("x", q.Delete(q.Var("x"))),
+  ));
 }
 
 async function start_db(docker) {
