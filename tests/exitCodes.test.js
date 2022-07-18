@@ -16,19 +16,18 @@ describe('deploy exit codes', () => {
   });
   const client = get_client();
   test('exit code 1', async () => {
-    await assert.rejects(async () => await exec("sls deploy -c fail-invalid-secret.yml", { "cwd": `${__dirname}/config` }));
+    await exec_sls_fail("fail-invalid-secret.yml");
     await assert_empty(client);
   });
   test('exit code 1', async () => {
-    await assert.rejects(async () => await exec("sls deploy -c fail-invalid-collection.yml", { "cwd": `${__dirname}/config` }));
+    await exec_sls_fail("fail-invalid-collection.yml");
     // TODO: The database will be split here, so it won't actually be empty.
     // This check should be enabled once the split database has been fixed.
     // await assert_empty(client);
     await clear_database(client);
   });
   test('exit code 0', async () => {
-    await exec("sls deploy -c valid.yml", { "cwd": `${__dirname}/config` });
-    // TODO: Make sure the db has a collection here
+    await exec_sls_work("valid.yml");
     await assert_matches(client, {
       collections: [ "movies" ],
       indexes: [ "movies_ts" ],
@@ -65,6 +64,39 @@ async function clear_database(client) {
     q.Paginate(q.Collections()),
     q.Lambda("x", q.Delete(q.Var("x"))),
   ));
+}
+
+async function exec_sls_fail(config) {
+  let child = spawn("sls", ["deploy", "-c", config], { "cwd": `${__dirname}/config` });
+
+  await new Promise((resolve, reject) => {
+    child.stdout.on("data", function(data) {
+      console.log(data.toString());
+    });
+    child.on('close', (code) => {
+      if (code == 1) {
+        resolve();
+      } else {
+        reject(`expected exit 1, got: ${code}`);
+      }
+    });
+  });
+}
+async function exec_sls_work(config) {
+  let child = spawn("sls", ["deploy", "-c", config], { "cwd": `${__dirname}/config` });
+
+  await new Promise((resolve, reject) => {
+    child.stdout.on("data", function(data) {
+      console.log(data.toString());
+    });
+    child.on('close', (code) => {
+      if (code == 0) {
+        resolve();
+      } else {
+        reject(`expected exit 0, got: ${code}`);
+      }
+    });
+  });
 }
 
 async function start_db(docker) {
