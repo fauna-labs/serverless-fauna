@@ -2,6 +2,8 @@ const { promisify } = require('util');
 const spawn = require('child_process').spawn;
 const exec = promisify(require('child_process').exec);
 const assert = require('assert');
+const faunadb = require('faunadb');
+const q = faunadb.query;
 
 // This test requires a local fauna container to be running.
 jest.setTimeout(30000);
@@ -10,23 +12,34 @@ describe('deploy exit codes', () => {
     await start_db();
   });
   afterAll(async () => {
-    await stop_db();
+    // await stop_db();
   });
-  // const client = get_client();
-  // TODO: Make sure the db is empty here
+  const client = get_client();
   test('exit code 1', async () => {
     await assert.rejects(async () => await exec("sls deploy -c fail-invalid-secret.yml", { "cwd": `${__dirname}/config` }));
+    await assert_empty(client);
   });
-  // TODO: Make sure the db is empty here
   test('exit code 1', async () => {
     await assert.rejects(async () => await exec("sls deploy -c fail-invalid-collection.yml", { "cwd": `${__dirname}/config` }));
+    // TODO: The database will be split here, so it won't actually be empty.
+    // await assert_empty(client);
   });
-  // TODO: Make sure the db is empty here
   test('exit code 0', async () => {
     await exec("sls deploy -c valid.yml", { "cwd": `${__dirname}/config` });
+    // TODO: Make sure the db has a collection here
+    await assert_empty(client);
   });
-  // TODO: Make sure the db has a collection here
 });
+
+function get_client() {
+  return new faunadb.Client({ secret: "secret", port: 9001, domain: "localhost", scheme: "http" });
+}
+
+async function assert_empty(client) {
+  let result = await client.query(q.Paginate(q.Collections()));
+  console.log(result);
+  expect(result.data).toEqual([]);
+}
 
 async function start_db(docker) {
   console.log("Starting local FaunaDB instance...");
