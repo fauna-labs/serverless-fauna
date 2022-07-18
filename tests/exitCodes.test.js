@@ -29,8 +29,8 @@ describe('deploy exit codes', () => {
   test('exit code 0', async () => {
     await exec_sls_work("valid.yml");
     await assert_matches(client, {
-      collections: [ "movies" ],
-      indexes: [ "movies_ts" ],
+      collections: [ "movies_2" ],
+      indexes: [ "movies_ts_2" ],
     });
   });
 });

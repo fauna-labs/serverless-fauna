@@ -11,11 +11,11 @@ fauna:
     port: 9001
     scheme: http
   collections:
-    movies:
-      name: movies
+    movies_2:
+      name: movies_2
       data:
         some_data_key: some_data_value
   indexes:
     movies_ts_2:
       name: movies_ts_2
-      source: movies
+      source: movies_2
