@@ -1,0 +1,19 @@
+provider:
+  name: "aws"
+plugins:
+  # - "@fauna-labs/serverless-fauna"
+  - "../../"
+service: "foo"
+fauna:
+  client:
+    secret: secret
+    domain: localhost
+    port: 9001
+    scheme: http
+  collections:
+    movies_2:
+      name: movies_2
+  indexes:
+    movies_ts_2:
+      name: movies_ts_2
+      source: movies_2
