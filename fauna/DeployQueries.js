@@ -6,25 +6,99 @@ const {
   FilterServerlessResourceWithDestroyPolicy,
 } = require('./utility')
 
+class Resources {
+  constructor({ collections, indexes, functions, roles }) {
+    this.collections = new Map(collections.map(collection => [collection.name, collection]));
+    this.indexes = new Map(indexes.map(index => [index.name, index]));
+    // TODO:
+    // this.functions = new Map(functions.map(func => [func.name, func]));
+    // this.roles = new Map(roles.map(role => [role.name, role]));
+  }
+
+  // If any of these objects is in the configuration, then it will be part of our
+  // massive Let() block. It also may have been created in this query, so we refer
+  // to it by variable.
+  collection(name) {
+    if (this.collections.get(name) !== undefined) {
+      return q.Var(`collection-${name}`);
+    } else {
+      return q.Collection(name);
+    }
+  }
+  func(name) {
+    if (this.functions.get(name) !== undefined) {
+      return q.Var(`function-${name}`);
+    } else {
+      return q.Function(name);
+    }
+  }
+  role(name) {
+    if (this.roles.get(name) !== undefined) {
+      return q.Var(`role-${name}`);
+    } else {
+      return q.Role(name);
+    }
+  }
+
+  // Updates an index source, so that all collection refs will use
+  // the Var(collection-name) when needed. Modifies source, and returns
+  // the source.
+  index_source(source) {
+    // TODO: Make this less bad
+    for (const obj of source) {
+      obj.collection = this.collection(obj.collection.raw.collection);
+    }
+    return source;
+  }
+}
+
 module.exports = ({
   collections = [],
   indexes = [],
   functions = [],
   roles = [],
 }) => {
-  const queries = [
-    ...prepareQueries({ resources: collections, type: 'collection' }),
-    ...prepareQueries({ resources: indexes, type: 'index' }),
-    prepareUpsert({
-      resources: roles.createWithoutPrivileges,
-      type: 'role',
-      remapDataForCreate: (role) => ({ ...role, privileges: [] }),
-    }),
-    ...prepareQueries({ resources: functions, type: 'function' }),
-    ...prepareQueries({ resources: roles.update, type: 'role' }),
-  ]
+  const resources = new Resources({ collections, indexes, functions, roles });
 
-  return queries.filter((q) => !!q)
+  let let_sections = [
+    ...build_collections(resources),
+    ...build_indexes(resources),
+  ];
+  let query = q.Let(let_sections, {});
+  console.log(query.toFQL());
+  return [{query: query}];
+}
+
+function build_collections(resources) {
+  let let_blocks = [];
+  for (const [name, collection] of resources.collections) {
+    let block = {};
+    block[`collection-${name}`] = q.If(
+      q.Exists(q.Collection(name)),
+      q.Collection(name),
+      q.Select("ref", q.CreateCollection({ name })),
+    );
+    let_blocks.push(block);
+  }
+  return let_blocks;
+}
+
+function build_indexes(resources) {
+  let let_blocks = [];
+  for (const [name, index] of resources.indexes) {
+    console.log("SOURCE", index.source);
+    let block = {};
+    block[`index-${name}`] = q.If(
+      q.Exists(q.Index(name)),
+      q.Index(name),
+      q.Select("ref", q.CreateIndex({
+        name,
+        source: resources.index_source(index.source),
+      })),
+    );
+    let_blocks.push(block);
+  }
+  return let_blocks;
 }
 
 /**
