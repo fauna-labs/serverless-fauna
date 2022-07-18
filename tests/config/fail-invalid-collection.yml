@@ -15,3 +15,7 @@ fauna:
       name: Movies
       data:
         some_data_key: some_data_value
+  indexes:
+    movies_ts:
+      name: movies_ts
+      source: movies but oh look i typoed right here so this is going to fail
