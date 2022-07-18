@@ -6,9 +6,9 @@ const assert = require('assert');
 describe('deploy exit codes', () => {
   jest.setTimeout(30000);
   test('exit code 1', async () => {
-    await assert.rejects(async () => await exec("sls deploy -c tests/config/failure.yml"));
+    await assert.rejects(async () => await exec("sls deploy -c failure.yml"), { "cwd": "./tests/config" });
   });
   test('exit code 0', async () => {
-    await exec("sls deploy -c tests/config/valid.yml");
+    await exec("sls deploy -c valid.yml", { "cwd": "./tests/config" });
   });
 });
