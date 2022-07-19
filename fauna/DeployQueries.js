@@ -66,6 +66,8 @@ class Resources {
       console.log(resource);
       if (resource.raw.collection !== undefined) {
         privilege.resource = this.collection(resource.raw.collection);
+      } else if (resource.raw.function !== undefined) {
+        privilege.resource = this.func(resource.raw.function);
       }
     }
     return privileges;
@@ -153,7 +155,8 @@ function build_functions(resources) {
         name,
         body: func.body,
         data: func.data,
-        role: resources.role(func.role),
+        // TODO: Make this less bad
+        role: resources.role(func.role.raw.role),
         ttl: func.ttl,
       })),
     );
