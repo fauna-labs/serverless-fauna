@@ -37,6 +37,11 @@ class DeployCommand {
     try {
       this.logger.info('Schema updating in process...')
 
+      // First pass: we convert all yaml values into the arguments of a Create*()
+      // query. This is done by calling the `this.*Adapter()` functinos.
+      //
+      // Second pass: we call DeployQueries. This transforms all those Create*()
+      // queries into one large Let() block, which will build everything listed.
       const queries = DeployQueries({
         collections: Object.values(collections).map((collection) => this.collectionAdapter(collection)),
         indexes: Object.values(indexes).map((index) => this.indexAdapter(index)),
