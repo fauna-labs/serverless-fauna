@@ -57,15 +57,16 @@ class DeployCommand {
           if (res.errors.length !== 0) {
             for (const { ref_name, schema, database } of res.errors) {
               // Don't log the data field, as we can always change that
+              // Don't log the name field, as that is already shown outside of the object
               const schema_filtered = Object.fromEntries(
                 Object.entries(schema)
-                  .filter(([key]) => key !== "data")
+                  .filter(([key]) => key !== "data" && key !== "name")
               );
               // Only log the values in the database that are in the schema.
               // This makes it more obvious where the change is.
               const database_filtered = Object.fromEntries(
                 Object.entries(database)
-                  .filter(([key]) => key !== "data" && schema[key] !== undefined)
+                  .filter(([key]) => schema_filtered[key] !== undefined)
               );
               this.logger.error("Error: " + ref_name + " differs from stream");
               this.logger.info(ref_name + " schema: " + util.inspect(schema_filtered));
