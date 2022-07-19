@@ -63,28 +63,30 @@ class Resources {
   ref(ref) {
     if (ref.collection.id === "collections") {
       if (this.collections.get(ref.id) !== undefined) {
-        return ref_to_var(ref);
+        return q.Var(ref_to_var(ref));
       } else {
         return q.Collection(name);
       }
     } else if (ref.collection.id === "indexes") {
       if (this.indexes.get(ref.id) !== undefined) {
-        return ref_to_var(ref);
+        return q.Var(ref_to_var(ref));
       } else {
         return q.Index(name);
       }
     } else if (ref.collection.id === "functions") {
       if (this.functions.get(ref.id) !== undefined) {
-        return ref_to_var(ref);
+        return q.Var(ref_to_var(ref));
       } else {
         return q.Function(name);
       }
     } else if (ref.collection.id === "roles") {
       if (this.roles.get(ref.id) !== undefined) {
-        return ref_to_var(ref);
+        return q.Var(ref_to_var(ref));
       } else {
         return q.Role(name);
       }
+    } else {
+      throw new Exception("cannot transform ref: " + ref);
     }
   }
 
@@ -157,6 +159,7 @@ class QueryBuilder {
     // to log the result of the first block.
     block[ref_to_var(ref)] = q.If(
       q.Exists(ref),
+      // TODO: Check if needs to update
       update,
       q.Select("ref", create_function_for_ref(ref)(create)),
     );
@@ -166,6 +169,31 @@ class QueryBuilder {
         q.Exists(ref),
         q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
         q.Concat([q.Var("result"), `created ${ref_to_log(ref)}\n`]),
+      ),
+    });
+  }
+  add_update({ ref, update }) {
+    // First, clean up the update arguments
+    for (const [key, value] of Object.entries(update)) {
+      if (value === undefined) {
+        delete update[key];
+      }
+    };
+    let block = {};
+    const variable = ref_to_var(ref);
+    block[variable] = q.If(
+      // TODO: Check if needs to update
+      true,
+      q.Update(q.Var(variable), update),
+      {},
+    );
+    this.sections.push(block);
+    this.sections.push({
+      result: q.If(
+        // TODO: Check if needs to update
+        true,
+        q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
+        q.Var("result"),
       ),
     });
   }
@@ -231,7 +259,7 @@ class QueryBuilder {
           body: func.body,
           data: func.data,
           // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
-          role: typeof func.role === values.Ref ? this.resources.ref(func.role) : func.role,
+          role: func.role instanceof values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
         },
       });
