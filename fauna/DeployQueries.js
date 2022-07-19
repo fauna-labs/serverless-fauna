@@ -94,6 +94,159 @@ class Resources {
   }
 }
 
+class QueryBuilder {
+  constructor({ resources }) {
+    // A list of Let() blocks.
+    this.sections = [{ result: "\n" }];
+    // A Resources instance.
+    this.resources = resources;
+  }
+
+  // Finishes the Let(), and returns a query block.
+  finish() {
+    return q.Let(this.sections, q.Var("result"));
+  }
+
+  // Converts a ref, such as Collection("foo") or Function("my_func"),
+  // into the variable name for said reference.
+  ref_to_var(ref) {
+    if (ref.collection.id === "collections") {
+      return `collection-${ref.id}`
+    } else if (ref.collection.id === "indexes") {
+      return `index-${ref.id}`
+    } else if (ref.collection.id === "functions") {
+      return `function-${ref.id}`
+    } else if (ref.collection.id === "roles") {
+      return `role-${ref.id}`
+    }
+  }
+  // Converts a ref into a human readable name. For example,
+  // Collection("foo") becomes "collection foo", and Function("my_func")
+  // becomes "function my_func"
+  ref_to_log(ref) {
+    if (ref.collection.id === "collections") {
+      return `collection \`${ref.id}\``
+    } else if (ref.collection.id === "indexes") {
+      return `index \`${ref.id}\``
+    } else if (ref.collection.id === "functions") {
+      return `function \`${ref.id}\``
+    } else if (ref.collection.id === "roles") {
+      return `role \`${ref.id}\``
+    }
+  }
+
+  // Creates a new let section. This will have the basic form of:
+  // ```
+  // If(
+  //   Exists(ref),
+  //   update,
+  //   create,
+  // )
+  // ```
+  // This also creates another let section, which will log if the
+  // update query or the create query was performed. Because of this,
+  // the ref needs to be a collection, index, function, or role ref,
+  // so that we can log it correctly.
+  add({ ref, update, create }) {
+    let block = {};
+    block[this.ref_to_var(ref)] = q.If(
+      q.Exists(ref),
+      update,
+      create,
+    );
+    this.sections.push(block);
+    this.sections.push({
+      result: q.If(
+        q.Exists(ref),
+        q.Concat([q.Var("result"), `updated ${this.ref_to_log(ref)}\n`]),
+        q.Concat([q.Var("result"), `created ${this.ref_to_log(ref)}\n`]),
+      ),
+    });
+  }
+
+  // Adds all the let sections to create collections.
+  build_collections() {
+    for (const [name, collection] of this.resources.collections) {
+      this.add({
+        ref: new values.Ref(name, new values.Ref("collections")),
+        update: q.Collection(name),
+        create: q.Select("ref", q.CreateCollection({
+          name,
+          data:         collection.data,
+          history_days: collection.history_days,
+          ttl:          collection.ttl,
+          ttl_days:     collection.ttl_days,
+          permissions:  collection.permissions,
+        })),
+      });
+    }
+  }
+  build_indexes(resources) {
+    for (const [name, index] of this.resources.indexes) {
+      this.add({
+        ref: new values.Ref(name, new values.Ref("indexes")),
+        update: q.Index(name),
+        create: q.Select("ref", q.CreateIndex({
+          name,
+          source:      this.resources.index_source(index.source),
+          terms:       index.terms,
+          values:      index.values,
+          unique:      index.unique,
+          serialized:  index.serialized,
+          permissions: index.permissions,
+          data:        index.data,
+          ttl:         index.ttl,
+        })),
+      });
+    }
+  }
+  build_empty_roles() {
+    for (const [name, role] of this.resources.roles) {
+      this.add({
+        ref: new values.Ref(name, new values.Ref("roles")),
+        update: q.Role(name),
+        create: q.Select("ref", q.CreateRole({
+          name,
+          // Empty privileges, so that we can create our functions first
+          privileges: [],
+          data:       role.data,
+          ttl:        role.ttl,
+        })),
+      });
+    }
+  }
+  build_functions() {
+    for (const [name, func] of this.resources.functions) {
+      this.add({
+        ref: new values.Ref(name, new values.Ref("functions")),
+        update: q.Function(name),
+        create: q.Select("ref", q.CreateFunction({
+          name,
+          body: func.body,
+          data: func.data,
+          // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
+          role: typeof func.role === values.Ref ? this.resources.role(func.role.id) : func.role,
+          ttl:  func.ttl,
+        })),
+      });
+    }
+  }
+  build_update_roles() {
+    for (const [name, role] of this.resources.roles) {
+      this.add_update({
+        ref: new values.Ref(name, new values.Ref("roles")),
+        update: q.Update(
+          this.resources.role(name),
+          {
+            privileges: this.resources.role_privileges(role.privileges),
+            membership: role.membership,
+          }
+        )
+      });
+    }
+  }
+}
+
 module.exports = ({
   collections = [],
   indexes = [],
@@ -101,135 +254,17 @@ module.exports = ({
   roles = [],
 }) => {
   const resources = new Resources({ collections, indexes, functions, roles });
+  const builder = new QueryBuilder({ resources });
 
-  let let_sections = [
-    { result: "\n" },
-    ...build_collections(resources),
-    ...build_indexes(resources),
-    ...build_empty_roles(resources),
-    ...build_functions(resources),
-    ...update_roles(resources),
-  ];
-  let query = q.Let(let_sections, q.Var("result"));
+  builder.build_collections();
+  builder.build_indexes();
+  builder.build_empty_roles();
+  builder.build_functions();
+  builder.build_update_roles();
+
+  let query = builder.finish();
   console.log(beautify.js(query.toFQL(), { indent_size: 2, keep_array_indentation: true }));
   return query;
-}
-
-function build_collections(resources) {
-  let let_blocks = [];
-  for (const [name, collection] of resources.collections) {
-    let block = {};
-    block[`collection-${name}`] = q.If(
-      q.Exists(q.Collection(name)),
-      q.Collection(name),
-      q.Select("ref", q.CreateCollection({
-        name,
-        data:         collection.data,
-        history_days: collection.history_days,
-        ttl:          collection.ttl,
-        ttl_days:     collection.ttl_days,
-        permissions:  collection.permissions,
-      })),
-    );
-    let_blocks.push(block);
-    let_blocks.push({
-      result: q.If(
-        q.Exists(q.Collection(name)),
-        q.Concat([q.Var("result"), `updated collection ${name}\n`]),
-        q.Concat([q.Var("result"), `created collection ${name}\n`]),
-      ),
-    });
-  }
-  return let_blocks;
-}
-
-function build_indexes(resources) {
-  let let_blocks = [];
-  for (const [name, index] of resources.indexes) {
-    console.log("SOURCE", index.source);
-    let block = {};
-    block[`index-${name}`] = q.If(
-      q.Exists(q.Index(name)),
-      q.Index(name),
-      q.Select("ref", q.CreateIndex({
-        name,
-        source:      resources.index_source(index.source),
-        terms:       index.terms,
-        values:      index.values,
-        unique:      index.unique,
-        serialized:  index.serialized,
-        permissions: index.permissions,
-        data:        index.data,
-        ttl:         index.ttl,
-      })),
-    );
-    let_blocks.push(block);
-    let_blocks.push({
-      result: q.If(
-        q.Exists(q.Index(name)),
-        q.Concat([q.Var("result"), `updated index ${name}\n`]),
-        q.Concat([q.Var("result"), `created index ${name}\n`]),
-      ),
-    });
-  }
-  return let_blocks;
-}
-
-function build_empty_roles(resources) {
-  let let_blocks = [];
-  for (const [name, role] of resources.roles) {
-    let block = {};
-    block[`role-${name}`] = q.If(
-      q.Exists(q.Role(name)),
-      q.Role(name),
-      q.Select("ref", q.CreateRole({
-        name,
-        // Empty privileges, so that we can create our functions first
-        privileges: [],
-        data:       role.data,
-        ttl:        role.ttl,
-      })),
-    );
-    let_blocks.push(block);
-  }
-  return let_blocks;
-}
-
-function build_functions(resources) {
-  let let_blocks = [];
-  for (const [name, func] of resources.functions) {
-    let block = {};
-    block[`function-${name}`] = q.If(
-      q.Exists(q.Function(name)),
-      q.Function(name),
-      q.Select("ref", q.CreateFunction({
-        name,
-        body: func.body,
-        data: func.data,
-        // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
-        role: typeof func.role === values.Ref ? resources.role(func.role.id) : func.role,
-        ttl:  func.ttl,
-      })),
-    );
-    let_blocks.push(block);
-  }
-  return let_blocks;
-}
-
-function update_roles(resources) {
-  let let_blocks = [];
-  for (const [name, role] of resources.roles) {
-    let block = {};
-    block[""] = q.Update(
-      resources.role(name),
-      {
-        privileges: resources.role_privileges(role.privileges),
-        membership: role.membership,
-      }
-    );
-    let_blocks.push(block);
-  }
-  return let_blocks;
 }
 
 /**
