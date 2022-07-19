@@ -110,7 +110,7 @@ module.exports = ({
   ];
   let query = q.Let(let_sections, {});
   console.log(query.toFQL());
-  return [{query: query}];
+  return query;
 }
 
 function build_collections(resources) {

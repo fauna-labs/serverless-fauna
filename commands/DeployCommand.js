@@ -42,32 +42,17 @@ class DeployCommand {
       //
       // Second pass: we call DeployQueries. This transforms all those Create*()
       // queries into one large Let() block, which will build everything listed.
-      const queries = DeployQueries({
+      const query = DeployQueries({
         collections: Object.values(collections).map((collection) => this.collectionAdapter(collection)),
         indexes: Object.values(indexes).map((index) => this.indexAdapter(index)),
         functions: Object.values(functions).map((fn) => this.functionAdapter(fn)),
         roles: Object.values(roles).map((role) => this.roleAdapter(role)),
       })
 
-      let isSchemaUpdated
-      for (const { query, name, log } of queries) {
-        await this.faunaClient
-          .query(query)
-          .then((resp) => {
-            if (resp) {
-              isSchemaUpdated = true
-            }
-
-            if (resp && log) {
-              this.logger.success(resp)
-            }
-          })
-          .catch((errResp) => this.handleQueryError({ errResp, name }))
-      }
-
-      if (!isSchemaUpdated) {
-        this.logger.success('Schema up to date')
-      }
+      await this.faunaClient
+        .query(query)
+        .then((resp) => this.logger.success(resp))
+        .catch((errResp) => this.handleQueryError({ errResp, name }))
     } catch (error) {
       this.logger.error(error)
     }
