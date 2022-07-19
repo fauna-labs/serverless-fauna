@@ -2,6 +2,7 @@ const DeployQueries = require('../fauna/DeployQueries')
 const { query: q, values } = require('faunadb')
 const { ResourceMap } = require('../fauna/utility')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
+const util = require('util')
 
 class DeployCommand {
   command = {
@@ -51,7 +52,30 @@ class DeployCommand {
 
       await this.faunaClient
         .query(query)
-        .then((resp) => this.logger.success(resp))
+        .then((res) => {
+          console.log(res);
+          if (res.errors.length !== 0) {
+            for (const { ref_name, schema, database } of res.errors) {
+              // Don't log the data field, as we can always change that
+              const schema_filtered = Object.fromEntries(
+                Object.entries(schema)
+                  .filter(([key]) => key !== "data")
+              );
+              // Only log the values in the database that are in the schema.
+              // This makes it more obvious where the change is.
+              const database_filtered = Object.fromEntries(
+                Object.entries(database)
+                  .filter(([key]) => key !== "data" && schema[key] !== undefined)
+              );
+              this.logger.error("Error: " + ref_name + " differs from stream");
+              this.logger.info(ref_name + " schema: " + util.inspect(schema_filtered));
+              this.logger.info(ref_name + " database: " + util.inspect(database_filtered));
+            }
+            throw new Error("query failed");
+          } else {
+            this.logger.success(res.result);
+          }
+        })
         .catch((errResp) => this.handleQueryError({ errResp }))
     } catch (error) {
       this.logger.error(error)

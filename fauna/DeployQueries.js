@@ -124,14 +124,23 @@ class Resources {
 class QueryBuilder {
   constructor({ resources }) {
     // A list of Let() blocks.
-    this.sections = [{ result: "\n" }];
+    this.sections = [
+      { result: "\n" },
+      { errors: [] },
+    ];
     // A Resources instance.
     this.resources = resources;
   }
 
   // Finishes the Let(), and returns a query block.
   finish() {
-    return q.Let(this.sections, q.Var("result"));
+    return q.Let(
+      this.sections,
+      {
+        result: q.Var("result"),
+        errors: q.Var("errors"),
+      }
+    );
   }
 
   // Creates a new let section. This will have the basic form of:
@@ -179,11 +188,8 @@ class QueryBuilder {
       q.If(
         q.Var("is-updated-" + ref_to_var(ref)),
         ref,
-        q.Abort(q.Format(
-          `${ref_to_log(ref)} differs from schema\nschema: %@\ndatabase: %@`,
-          body,
-          q.Get(ref),
-        )),
+        // TODO: Update value if possible
+        ref,
       ),
       q.Select("ref", create_function_for_ref(ref)(body)),
     );
@@ -197,6 +203,24 @@ class QueryBuilder {
           q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
         ),
         q.Concat([q.Var("result"), `created ${ref_to_log(ref)}\n`]),
+      ),
+    });
+    this.sections.push({
+      errors: q.If(
+        q.Exists(ref),
+        q.If(
+          q.Var("is-updated-" + ref_to_var(ref)),
+          q.Var("errors"), // no error if up to date
+          q.Append( // error: not up to date, cannot update
+            {
+              ref_name: ref_to_log(ref),
+              schema: body,
+              database: q.Get(ref),
+            },
+            q.Var("errors"),
+          ),
+        ),
+        q.Var("errors"), // no error if created
       ),
     });
   }
