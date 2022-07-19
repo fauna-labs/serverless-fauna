@@ -52,23 +52,23 @@ class DeployCommand {
       await this.faunaClient
         .query(query)
         .then((resp) => this.logger.success(resp))
-        .catch((errResp) => this.handleQueryError({ errResp, name }))
+        .catch((errResp) => this.handleQueryError({ errResp }))
     } catch (error) {
       this.logger.error(error)
     }
   }
 
-  handleQueryError({ errResp, name }) {
+  handleQueryError({ errResp }) {
     if (!errResp.requestResult) throw errResp
     const error = errResp.requestResult.responseContent.errors[0]
     if (error.failures) {
       const failures = error.failures
         .map((f) => [`\`${f.field}\``, f.description].join(': '))
         .join('; ')
-      throw new Error([name, failures].join(' => '))
+      throw new Error(failures)
     }
 
-    throw new Error([name, error.description].join(' => '))
+    throw new Error(error.description)
   }
 
   mergeMetadata(data = {}) {
