@@ -123,8 +123,9 @@ class DeployCommand {
 
   indexSourceAdapter(source) {
     const adaptedSource = {
-      collection: q.Collection(
-        typeof source === 'string' ? source : source.collection
+      collection: new values.Ref(
+        typeof source === 'string' ? source : source.collection,
+        new values.Ref("collections"),
       ),
     }
 
