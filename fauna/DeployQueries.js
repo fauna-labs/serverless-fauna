@@ -138,41 +138,69 @@ class QueryBuilder {
   // ```
   // If(
   //   Exists(ref),
-  //   update,
-  //   Select("ref", Create*(create)),
+  //   If(Equals(Get(ref), body), {}, Abort("differs!")),
+  //   Select("ref", Create*(body)),
   // )
   // ```
   // This also creates another let section, which will log if the
   // update query or the create query was performed. Because of this,
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
-  add({ ref, update, create }) {
-    // First, clean up the create arguments
-    for (const [key, value] of Object.entries(create)) {
+  create({ ref, body }) {
+    // First, clean up the query body
+    for (const [key, value] of Object.entries(body)) {
       if (value === undefined) {
-        delete create[key];
+        delete body[key];
       }
     };
+    // This variable is expensive to create, and used in logging, so we create
+    // it before hand. If the ref doesn't exist, it will never be used, so we
+    // just say that the ref is not updated.
     let block = {};
+    block["is-updated-" + ref_to_var(ref)] = q.If(
+      q.Exists(ref),
+      q.Equals([
+        q.Map(
+          Object.keys(body),
+          q.Lambda("key", q.Select(q.Var("key"), q.Get(ref), null))
+        ),
+        Object.values(body),
+      ]),
+      false, // won't be used, so this doesn't really matter
+    );
+    this.sections.push(block);
+
+    block = {};
     // We don't transform in Exists, as we haven't defined the variable yet.
     // Even in the second block, we don't want the variable, as we are trying
     // to log the result of the first block.
     block[ref_to_var(ref)] = q.If(
       q.Exists(ref),
-      // TODO: Check if needs to update
-      update,
-      q.Select("ref", create_function_for_ref(ref)(create)),
+      q.If(
+        q.Var("is-updated-" + ref_to_var(ref)),
+        ref,
+        q.Abort(q.Format(
+          `${ref_to_log(ref)} differs from schema\nschema: %@\ndatabase: %@`,
+          body,
+          q.Get(ref),
+        )),
+      ),
+      q.Select("ref", create_function_for_ref(ref)(body)),
     );
     this.sections.push(block);
     this.sections.push({
       result: q.If(
         q.Exists(ref),
-        q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
+        q.If(
+          q.Var("is-updated-" + ref_to_var(ref)),
+          q.Concat([q.Var("result"), `${ref_to_log(ref)} is up to date\n`]),
+          q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
+        ),
         q.Concat([q.Var("result"), `created ${ref_to_log(ref)}\n`]),
       ),
     });
   }
-  add_update({ ref, update }) {
+  update({ ref, update }) {
     // First, clean up the update arguments
     for (const [key, value] of Object.entries(update)) {
       if (value === undefined) {
@@ -201,10 +229,9 @@ class QueryBuilder {
   // Adds all the let sections to create collections.
   build_collections() {
     for (const [name, collection] of this.resources.collections) {
-      this.add({
+      this.create({
         ref: new values.Ref(name, new values.Ref("collections")),
-        update: q.Collection(name),
-        create: {
+        body: {
           name,
           data:         collection.data,
           history_days: collection.history_days,
@@ -217,10 +244,9 @@ class QueryBuilder {
   }
   build_indexes(resources) {
     for (const [name, index] of this.resources.indexes) {
-      this.add({
+      this.create({
         ref: new values.Ref(name, new values.Ref("indexes")),
-        update: q.Index(name),
-        create: {
+        body: {
           name,
           source:      this.resources.index_source(index.source),
           terms:       index.terms,
@@ -236,10 +262,9 @@ class QueryBuilder {
   }
   build_empty_roles() {
     for (const [name, role] of this.resources.roles) {
-      this.add({
+      this.create({
         ref: new values.Ref(name, new values.Ref("roles")),
-        update: q.Role(name),
-        create: {
+        body: {
           name,
           // Empty privileges, so that we can create our functions first
           privileges: [],
@@ -251,10 +276,9 @@ class QueryBuilder {
   }
   build_functions() {
     for (const [name, func] of this.resources.functions) {
-      this.add({
+      this.create({
         ref: new values.Ref(name, new values.Ref("functions")),
-        update: q.Function(name),
-        create: {
+        body: {
           name,
           body: func.body,
           data: func.data,
@@ -268,7 +292,7 @@ class QueryBuilder {
   build_update_roles() {
     for (const [name, role] of this.resources.roles) {
       const ref = new values.Ref(name, new values.Ref("roles"));
-      this.add_update({
+      this.update({
         ref,
         update: {
           privileges: this.resources.role_privileges(role.privileges),
