@@ -7,6 +7,34 @@ const {
 } = require('./utility')
 const beautify = require('js-beautify');
 
+// Converts a ref, such as Collection("foo") or Function("my_func"),
+// into the variable name for said reference.
+function ref_to_var(ref) {
+  if (ref.collection.id === "collections") {
+    return `collection-${ref.id}`
+  } else if (ref.collection.id === "indexes") {
+    return `index-${ref.id}`
+  } else if (ref.collection.id === "functions") {
+    return `function-${ref.id}`
+  } else if (ref.collection.id === "roles") {
+    return `role-${ref.id}`
+  }
+}
+// Converts a ref into a human readable name. For example,
+// Collection("foo") becomes "collection `foo`", and Function("my_func")
+// becomes "function `my_func`"
+function ref_to_log(ref) {
+  if (ref.collection.id === "collections") {
+    return `collection \`${ref.id}\``
+  } else if (ref.collection.id === "indexes") {
+    return `index \`${ref.id}\``
+  } else if (ref.collection.id === "functions") {
+    return `function \`${ref.id}\``
+  } else if (ref.collection.id === "roles") {
+    return `role \`${ref.id}\``
+  }
+}
+
 class Resources {
   constructor({ collections, indexes, functions, roles }) {
     this.collections = new Map(collections.map(collection => [collection.name, collection]));
@@ -18,40 +46,31 @@ class Resources {
   // If any of these objects is in the configuration, then it will be part of our
   // massive Let() block. It also may have been created in this query, so we refer
   // to it by variable.
-  collection(name) {
-    if (name === null) {
-      return name;
-    } else if (this.collections.get(name) !== undefined) {
-      return q.Var(`collection-${name}`);
-    } else {
-      return q.Collection(name);
-    }
-  }
-  index(name) {
-    if (name === null) {
-      return name;
-    } else if (this.indexes.get(name) !== undefined) {
-      return q.Var(`index-${name}`);
-    } else {
-      return q.Index(name);
-    }
-  }
-  func(name) {
-    if (name === null) {
-      return name;
-    } else if (this.functions.get(name) !== undefined) {
-      return q.Var(`function-${name}`);
-    } else {
-      return q.Function(name);
-    }
-  }
-  role(name) {
-    if (name === null) {
-      return name;
-    } else if (this.roles.get(name) !== undefined) {
-      return q.Var(`role-${name}`);
-    } else {
-      return q.Role(name);
+  ref(ref) {
+    if (ref.collection.id === "collections") {
+      if (this.collections.get(ref.id) !== undefined) {
+        return ref_to_var(ref);
+      } else {
+        return q.Collection(name);
+      }
+    } else if (ref.collection.id === "indexes") {
+      if (this.indexes.get(ref.id) !== undefined) {
+        return ref_to_var(ref);
+      } else {
+        return q.Index(name);
+      }
+    } else if (ref.collection.id === "functions") {
+      if (this.functions.get(ref.id) !== undefined) {
+        return ref_to_var(ref);
+      } else {
+        return q.Function(name);
+      }
+    } else if (ref.collection.id === "roles") {
+      if (this.roles.get(ref.id) !== undefined) {
+        return ref_to_var(ref);
+      } else {
+        return q.Role(name);
+      }
     }
   }
 
@@ -61,7 +80,7 @@ class Resources {
   index_source(source) {
     // TODO: Read this: https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object
     for (const obj of source) {
-      obj.collection = this.collection(obj.collection.id);
+      obj.collection = this.ref(obj.collection);
     }
     return source;
   }
@@ -78,16 +97,8 @@ class Resources {
       // it was created in this query.
       if (resource.collection === undefined) {
         privilege.resource = resource;
-      } else if (resource.collection.id === "collections") {
-        privilege.resource = this.collection(resource.id);
-      } else if (resource.collection.id === "indexes") {
-        privilege.resource = this.index(resource.id);
-      } else if (resource.collection.id === "functions") {
-        privilege.resource = this.func(resource.id);
-      } else if (resource.collection.id === "roles") {
-        privilege.resource = this.role(resource.id);
       } else {
-        throw new Exception("invalid resource: " + resource);
+        privilege.resource = this.ref(resource);
       }
     }
     return privileges;
@@ -107,34 +118,6 @@ class QueryBuilder {
     return q.Let(this.sections, q.Var("result"));
   }
 
-  // Converts a ref, such as Collection("foo") or Function("my_func"),
-  // into the variable name for said reference.
-  ref_to_var(ref) {
-    if (ref.collection.id === "collections") {
-      return `collection-${ref.id}`
-    } else if (ref.collection.id === "indexes") {
-      return `index-${ref.id}`
-    } else if (ref.collection.id === "functions") {
-      return `function-${ref.id}`
-    } else if (ref.collection.id === "roles") {
-      return `role-${ref.id}`
-    }
-  }
-  // Converts a ref into a human readable name. For example,
-  // Collection("foo") becomes "collection foo", and Function("my_func")
-  // becomes "function my_func"
-  ref_to_log(ref) {
-    if (ref.collection.id === "collections") {
-      return `collection \`${ref.id}\``
-    } else if (ref.collection.id === "indexes") {
-      return `index \`${ref.id}\``
-    } else if (ref.collection.id === "functions") {
-      return `function \`${ref.id}\``
-    } else if (ref.collection.id === "roles") {
-      return `role \`${ref.id}\``
-    }
-  }
-
   // Creates a new let section. This will have the basic form of:
   // ```
   // If(
@@ -149,7 +132,10 @@ class QueryBuilder {
   // so that we can log it correctly.
   add({ ref, update, create }) {
     let block = {};
-    block[this.ref_to_var(ref)] = q.If(
+    // We don't transform in Exists, as we haven't defined the variable yet.
+    // Even in the second block, we don't want the variable, as we are trying
+    // to log the result of the first block.
+    block[ref_to_var(ref)] = q.If(
       q.Exists(ref),
       update,
       create,
@@ -158,8 +144,8 @@ class QueryBuilder {
     this.sections.push({
       result: q.If(
         q.Exists(ref),
-        q.Concat([q.Var("result"), `updated ${this.ref_to_log(ref)}\n`]),
-        q.Concat([q.Var("result"), `created ${this.ref_to_log(ref)}\n`]),
+        q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
+        q.Concat([q.Var("result"), `created ${ref_to_log(ref)}\n`]),
       ),
     });
   }
@@ -225,7 +211,7 @@ class QueryBuilder {
           body: func.body,
           data: func.data,
           // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
-          role: typeof func.role === values.Ref ? this.resources.role(func.role.id) : func.role,
+          role: typeof func.role === values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
         })),
       });
@@ -233,15 +219,13 @@ class QueryBuilder {
   }
   build_update_roles() {
     for (const [name, role] of this.resources.roles) {
+      const ref = new values.Ref(name, new values.Ref("roles"));
       this.add_update({
-        ref: new values.Ref(name, new values.Ref("roles")),
-        update: q.Update(
-          this.resources.role(name),
-          {
-            privileges: this.resources.role_privileges(role.privileges),
-            membership: role.membership,
-          }
-        )
+        ref,
+        update: {
+          privileges: this.resources.role_privileges(role.privileges),
+          membership: role.membership,
+        }
       });
     }
   }
