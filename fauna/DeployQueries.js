@@ -120,7 +120,14 @@ function build_collections(resources) {
     block[`collection-${name}`] = q.If(
       q.Exists(q.Collection(name)),
       q.Collection(name),
-      q.Select("ref", q.CreateCollection({ name })),
+      q.Select("ref", q.CreateCollection({
+        name,
+        data:         collection.data,
+        history_days: collection.history_days,
+        ttl:          collection.ttl,
+        ttl_days:     collection.ttl_days,
+        permissions:  collection.permissions,
+      })),
     );
     let_blocks.push(block);
   }
@@ -137,7 +144,14 @@ function build_indexes(resources) {
       q.Index(name),
       q.Select("ref", q.CreateIndex({
         name,
-        source: resources.index_source(index.source),
+        source:      resources.index_source(index.source),
+        terms:       index.terms,
+        values:      index.values,
+        unique:      index.unique,
+        serialized:  index.serialized,
+        permissions: index.permissions,
+        data:        index.data,
+        ttl:         index.ttl,
       })),
     );
     let_blocks.push(block);
@@ -147,7 +161,7 @@ function build_indexes(resources) {
 
 function build_empty_roles(resources) {
   let let_blocks = [];
-  for (const [name, _] of resources.roles) {
+  for (const [name, role] of resources.roles) {
     let block = {};
     block[`role-${name}`] = q.If(
       q.Exists(q.Role(name)),
@@ -156,6 +170,8 @@ function build_empty_roles(resources) {
         name,
         // Empty privileges, so that we can create our functions first
         privileges: [],
+        data:       role.data,
+        ttl:        role.ttl,
       })),
     );
     let_blocks.push(block);
@@ -176,7 +192,7 @@ function build_functions(resources) {
         data: func.data,
         // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
         role: typeof func.role === values.Ref ? resources.role(func.role.id) : func.role,
-        ttl: func.ttl,
+        ttl:  func.ttl,
       })),
     );
     let_blocks.push(block);
@@ -192,6 +208,7 @@ function update_roles(resources) {
       resources.role(name),
       {
         privileges: resources.role_privileges(role.privileges),
+        membership: role.membership,
       }
     );
     let_blocks.push(block);
