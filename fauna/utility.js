@@ -1,4 +1,4 @@
-const { query: q } = require('faunadb')
+const { values, query: q } = require('faunadb')
 
 const GetObjectFields = (obj) =>
   q.Map(q.ToArray(obj), (el) => q.Select([0], el))
@@ -54,16 +54,19 @@ const FilterServerlessResourceWithDestroyPolicy = ({
   )
 }
 
+// This maps a YAML key to a function that produces a resource for that value.
+// For example, in a role, the key "function: my_fun" would produce a resource
+// of Function("my_fun").
 const ResourceMap = {
-  collection: q.Collection,
-  index: q.Index,
-  function: q.Function,
-  collections: q.Collections,
-  databases: q.Databases,
-  indexes: q.Indexes,
-  roles: q.Roles,
-  functions: q.Functions,
-  keys: q.Keys,
+  collection:  (name) => new values.Ref(name, new values.Ref("collections")),
+  index:       (name) => new values.Ref(name, new values.Ref("indexes")),
+  function:    (name) => new values.Ref(name, new values.Ref("functions")),
+  collections: () => new values.Ref("collections"),
+  databases:   () => new values.Ref("databases"),
+  indexes:     () => new values.Ref("indexes"),
+  roles:       () => new values.Ref("roles"),
+  functions:   () => new values.Ref("functions"),
+  keys:        () => new values.Ref("keys"),
 }
 
 module.exports = {

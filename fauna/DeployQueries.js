@@ -26,6 +26,15 @@ class Resources {
       return q.Collection(name);
     }
   }
+  index(name) {
+    if (name === null) {
+      return name;
+    } else if (this.indexes.get(name) !== undefined) {
+      return q.Var(`index-${name}`);
+    } else {
+      return q.Index(name);
+    }
+  }
   func(name) {
     if (name === null) {
       return name;
@@ -49,10 +58,9 @@ class Resources {
   // the Var(collection-name) when needed. Modifies source, and returns
   // the source.
   index_source(source) {
-    // TODO: Make this less bad
     // TODO: Read this: https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object
     for (const obj of source) {
-      obj.collection = this.collection(obj.collection.raw.collection);
+      obj.collection = this.collection(obj.collection.id);
     }
     return source;
   }
@@ -60,14 +68,25 @@ class Resources {
   // the Var(collection-name) when needed, along with any other refs that
   // need to be transformed.
   role_privileges(privileges) {
-    // TODO: Make this less bad
     for (let privilege of privileges) {
       let resource = privilege.resource;
-      console.log(resource);
-      if (resource.raw.collection !== undefined) {
-        privilege.resource = this.collection(resource.raw.collection);
-      } else if (resource.raw.function !== undefined) {
-        privilege.resource = this.func(resource.raw.function);
+      // If the collection is undefined, it means this is a global ref,
+      // like Functions() or Collections(). If the collection is present,
+      // then it is a specific ref, like Function("my_func"). For specific
+      // refs, we need to map those to Var("function-my_func"), in case
+      // it was created in this query.
+      if (resource.collection === undefined) {
+        privilege.resource = resource;
+      } else if (resource.collection.id === "collections") {
+        privilege.resource = this.collection(resource.id);
+      } else if (resource.collection.id === "indexes") {
+        privilege.resource = this.index(resource.id);
+      } else if (resource.collection.id === "functions") {
+        privilege.resource = this.func(resource.id);
+      } else if (resource.collection.id === "roles") {
+        privilege.resource = this.role(resource.id);
+      } else {
+        throw new Exception("invalid resource: " + resource);
       }
     }
     return privileges;
