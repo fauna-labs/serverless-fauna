@@ -35,6 +35,20 @@ function ref_to_log(ref) {
   }
 }
 
+// Returns the Create*() function for the type of ref.
+// For example, Collection("foo") returns q.CreateCollection().
+function create_function_for_ref(ref) {
+  if (ref.collection.id === "collections") {
+    return q.CreateCollection;
+  } else if (ref.collection.id === "indexes") {
+    return q.CreateIndex;
+  } else if (ref.collection.id === "functions") {
+    return q.CreateFunction;
+  } else if (ref.collection.id === "roles") {
+    return q.CreateRole;
+  }
+}
+
 class Resources {
   constructor({ collections, indexes, functions, roles }) {
     this.collections = new Map(collections.map(collection => [collection.name, collection]));
@@ -123,7 +137,7 @@ class QueryBuilder {
   // If(
   //   Exists(ref),
   //   update,
-  //   create,
+  //   Select("ref", Create*(create)),
   // )
   // ```
   // This also creates another let section, which will log if the
@@ -131,6 +145,12 @@ class QueryBuilder {
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
   add({ ref, update, create }) {
+    // First, clean up the create arguments
+    for (const [key, value] of Object.entries(create)) {
+      if (value === undefined) {
+        delete create[key];
+      }
+    };
     let block = {};
     // We don't transform in Exists, as we haven't defined the variable yet.
     // Even in the second block, we don't want the variable, as we are trying
@@ -138,7 +158,7 @@ class QueryBuilder {
     block[ref_to_var(ref)] = q.If(
       q.Exists(ref),
       update,
-      create,
+      q.Select("ref", create_function_for_ref(ref)(create)),
     );
     this.sections.push(block);
     this.sections.push({
@@ -156,14 +176,14 @@ class QueryBuilder {
       this.add({
         ref: new values.Ref(name, new values.Ref("collections")),
         update: q.Collection(name),
-        create: q.Select("ref", q.CreateCollection({
+        create: {
           name,
           data:         collection.data,
           history_days: collection.history_days,
           ttl:          collection.ttl,
           ttl_days:     collection.ttl_days,
           permissions:  collection.permissions,
-        })),
+        },
       });
     }
   }
@@ -172,7 +192,7 @@ class QueryBuilder {
       this.add({
         ref: new values.Ref(name, new values.Ref("indexes")),
         update: q.Index(name),
-        create: q.Select("ref", q.CreateIndex({
+        create: {
           name,
           source:      this.resources.index_source(index.source),
           terms:       index.terms,
@@ -182,7 +202,7 @@ class QueryBuilder {
           permissions: index.permissions,
           data:        index.data,
           ttl:         index.ttl,
-        })),
+        },
       });
     }
   }
@@ -191,13 +211,13 @@ class QueryBuilder {
       this.add({
         ref: new values.Ref(name, new values.Ref("roles")),
         update: q.Role(name),
-        create: q.Select("ref", q.CreateRole({
+        create: {
           name,
           // Empty privileges, so that we can create our functions first
           privileges: [],
           data:       role.data,
           ttl:        role.ttl,
-        })),
+        },
       });
     }
   }
@@ -206,14 +226,14 @@ class QueryBuilder {
       this.add({
         ref: new values.Ref(name, new values.Ref("functions")),
         update: q.Function(name),
-        create: q.Select("ref", q.CreateFunction({
+        create: {
           name,
           body: func.body,
           data: func.data,
           // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
           role: typeof func.role === values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
-        })),
+        },
       });
     }
   }
