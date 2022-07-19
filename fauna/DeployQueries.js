@@ -10,30 +10,35 @@ class Resources {
   constructor({ collections, indexes, functions, roles }) {
     this.collections = new Map(collections.map(collection => [collection.name, collection]));
     this.indexes = new Map(indexes.map(index => [index.name, index]));
-    // TODO:
-    // this.functions = new Map(functions.map(func => [func.name, func]));
-    // this.roles = new Map(roles.map(role => [role.name, role]));
+    this.functions = new Map(functions.map(func => [func.name, func]));
+    this.roles = new Map(roles.map(role => [role.name, role]));
   }
 
   // If any of these objects is in the configuration, then it will be part of our
   // massive Let() block. It also may have been created in this query, so we refer
   // to it by variable.
   collection(name) {
-    if (this.collections.get(name) !== undefined) {
+    if (name === null) {
+      return name;
+    } else if (this.collections.get(name) !== undefined) {
       return q.Var(`collection-${name}`);
     } else {
       return q.Collection(name);
     }
   }
   func(name) {
-    if (this.functions.get(name) !== undefined) {
+    if (name === null) {
+      return name;
+    } else if (this.functions.get(name) !== undefined) {
       return q.Var(`function-${name}`);
     } else {
       return q.Function(name);
     }
   }
   role(name) {
-    if (this.roles.get(name) !== undefined) {
+    if (name === null) {
+      return name;
+    } else if (this.roles.get(name) !== undefined) {
       return q.Var(`role-${name}`);
     } else {
       return q.Role(name);
@@ -45,10 +50,25 @@ class Resources {
   // the source.
   index_source(source) {
     // TODO: Make this less bad
+    // TODO: Read this: https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object
     for (const obj of source) {
       obj.collection = this.collection(obj.collection.raw.collection);
     }
     return source;
+  }
+  // Updates a role privileges list, so that all collection refs will use
+  // the Var(collection-name) when needed, along with any other refs that
+  // need to be transformed.
+  role_privileges(privileges) {
+    // TODO: Make this less bad
+    for (let privilege of privileges) {
+      let resource = privilege.resource;
+      console.log(resource);
+      if (resource.raw.collection !== undefined) {
+        privilege.resource = this.collection(resource.raw.collection);
+      }
+    }
+    return privileges;
   }
 }
 
@@ -63,6 +83,9 @@ module.exports = ({
   let let_sections = [
     ...build_collections(resources),
     ...build_indexes(resources),
+    ...build_empty_roles(resources),
+    ...build_functions(resources),
+    ...update_roles(resources),
   ];
   let query = q.Let(let_sections, {});
   console.log(query.toFQL());
@@ -95,6 +118,59 @@ function build_indexes(resources) {
         name,
         source: resources.index_source(index.source),
       })),
+    );
+    let_blocks.push(block);
+  }
+  return let_blocks;
+}
+
+function build_empty_roles(resources) {
+  let let_blocks = [];
+  for (const [name, _] of resources.roles) {
+    let block = {};
+    block[`role-${name}`] = q.If(
+      q.Exists(q.Role(name)),
+      q.Role(name),
+      q.Select("ref", q.CreateRole({
+        name,
+        // Empty privileges, so that we can create our functions first
+        privileges: [],
+      })),
+    );
+    let_blocks.push(block);
+  }
+  return let_blocks;
+}
+
+function build_functions(resources) {
+  let let_blocks = [];
+  for (const [name, func] of resources.functions) {
+    let block = {};
+    block[`function-${name}`] = q.If(
+      q.Exists(q.Function(name)),
+      q.Function(name),
+      q.Select("ref", q.CreateFunction({
+        name,
+        body: func.body,
+        data: func.data,
+        role: resources.role(func.role),
+        ttl: func.ttl,
+      })),
+    );
+    let_blocks.push(block);
+  }
+  return let_blocks;
+}
+
+function update_roles(resources) {
+  let let_blocks = [];
+  for (const [name, role] of resources.roles) {
+    let block = {};
+    block[""] = q.Update(
+      resources.role(name),
+      {
+        privileges: resources.role_privileges(role.privileges),
+      }
     );
     let_blocks.push(block);
   }

@@ -38,16 +38,10 @@ class DeployCommand {
       this.logger.info('Schema updating in process...')
 
       const queries = DeployQueries({
-        roles: this.splitAndAdaptRoles(Object.values(roles)),
-        collections: Object.values(collections).map((collection) =>
-          this.collectionAdapter(collection)
-        ),
-        functions: Object.values(functions).map((fn) =>
-          this.functionAdapter(fn)
-        ),
-        indexes: Object.values(indexes).map((index) =>
-          this.indexAdapter(index)
-        ),
+        collections: Object.values(collections).map((collection) => this.collectionAdapter(collection)),
+        indexes: Object.values(indexes).map((index) => this.indexAdapter(index)),
+        functions: Object.values(functions).map((fn) => this.functionAdapter(fn)),
+        roles: Object.values(roles).map((role) => this.roleAdapter(role)),
       })
 
       let isSchemaUpdated

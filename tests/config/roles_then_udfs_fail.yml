@@ -17,7 +17,7 @@ fauna:
     role_1:
       name: role_1
       privileges:
-        - collection: "asdf"
+        - collection: movies
           actions:
             read: true
   functions:
