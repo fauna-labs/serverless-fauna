@@ -5,6 +5,7 @@ const {
   ReplaceObject,
   FilterServerlessResourceWithDestroyPolicy,
 } = require('./utility')
+const beautify = require('js-beautify');
 
 class Resources {
   constructor({ collections, indexes, functions, roles }) {
@@ -102,14 +103,15 @@ module.exports = ({
   const resources = new Resources({ collections, indexes, functions, roles });
 
   let let_sections = [
+    { result: "\n" },
     ...build_collections(resources),
     ...build_indexes(resources),
     ...build_empty_roles(resources),
     ...build_functions(resources),
     ...update_roles(resources),
   ];
-  let query = q.Let(let_sections, {});
-  console.log(query.toFQL());
+  let query = q.Let(let_sections, q.Var("result"));
+  console.log(beautify.js(query.toFQL(), { indent_size: 2, keep_array_indentation: true }));
   return query;
 }
 
@@ -130,6 +132,13 @@ function build_collections(resources) {
       })),
     );
     let_blocks.push(block);
+    let_blocks.push({
+      result: q.If(
+        q.Exists(q.Collection(name)),
+        q.Concat([q.Var("result"), `updated collection ${name}\n`]),
+        q.Concat([q.Var("result"), `created collection ${name}\n`]),
+      ),
+    });
   }
   return let_blocks;
 }
@@ -155,6 +164,13 @@ function build_indexes(resources) {
       })),
     );
     let_blocks.push(block);
+    let_blocks.push({
+      result: q.If(
+        q.Exists(q.Index(name)),
+        q.Concat([q.Var("result"), `updated index ${name}\n`]),
+        q.Concat([q.Var("result"), `created index ${name}\n`]),
+      ),
+    });
   }
   return let_blocks;
 }
