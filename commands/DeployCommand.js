@@ -1,5 +1,5 @@
 const DeployQueries = require('../fauna/DeployQueries')
-const { query: q } = require('faunadb')
+const { query: q, values } = require('faunadb')
 const { ResourceMap } = require('../fauna/utility')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
 
@@ -94,14 +94,19 @@ class DeployCommand {
 
   functionAdapter(fn) {
     try {
+      let role = null;
+      // Only modify role if it is set.
+      if (fn.role) {
+        if (fn.role === "admin" || fn.role === "server") {
+          role = fn.role;
+        } else {
+          role = new values.Ref(fn.role, new values.Ref("roles"));
+        }
+      }
       return {
         ...fn,
         data: this.mergeMetadata(fn.data),
-        role: fn.role
-          ? ['admin', 'server'].includes(fn.role)
-            ? fn.role
-            : q.Role(fn.role)
-          : null,
+        role,
         body: baseEvalFqlQuery(fn.body),
       }
     } catch (error) {

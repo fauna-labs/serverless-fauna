@@ -1,4 +1,4 @@
-const { query: q, Expr } = require('faunadb')
+const { query: q, Expr, values } = require('faunadb')
 const {
   GetObjectFields,
   ExtractValues,
@@ -174,8 +174,8 @@ function build_functions(resources) {
         name,
         body: func.body,
         data: func.data,
-        // TODO: Make this less bad
-        role: resources.role(func.role.raw.role),
+        // If it's a ref, transform it. If it's not, then it is either null, "admin", or "server".
+        role: typeof func.role === values.Ref ? resources.role(func.role.id) : func.role,
         ttl: func.ttl,
       })),
     );

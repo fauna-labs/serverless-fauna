@@ -24,3 +24,4 @@ fauna:
     my_func:
       name: my_func
       body: Lambda("x", Do(Now()))
+      role: admin

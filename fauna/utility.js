@@ -1,4 +1,4 @@
-const { values, query: q } = require('faunadb')
+const { query: q, values } = require('faunadb')
 
 const GetObjectFields = (obj) =>
   q.Map(q.ToArray(obj), (el) => q.Select([0], el))
