@@ -155,13 +155,16 @@ class QueryBuilder {
   // update query or the create query was performed. Because of this,
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
-  create({ ref, body }) {
+  create({ ref, body, check_body = null }) {
     // First, clean up the query body
     for (const [key, value] of Object.entries(body)) {
       if (value === undefined) {
         delete body[key];
       }
     };
+    if (check_body === null) {
+      check_body = body;
+    }
     // This variable is expensive to create, and used in logging, so we create
     // it before hand. If the ref doesn't exist, it will never be used, so we
     // just say that the ref is not updated.
@@ -170,10 +173,10 @@ class QueryBuilder {
       q.Exists(ref),
       q.Equals([
         q.Map(
-          Object.keys(body),
+          Object.keys(check_body),
           q.Lambda("key", q.Select(q.Var("key"), q.Get(ref), null))
         ),
-        Object.values(body),
+        Object.values(check_body),
       ]),
       false, // won't be used, so this doesn't really matter
     );
@@ -233,19 +236,50 @@ class QueryBuilder {
     };
     let block = {};
     const variable = ref_to_var(ref);
+
+    // This variable is expensive to create, and used in logging, so we create
+    // it before hand. If the ref doesn't exist, it will never be used, so we
+    // just say that the ref is not updated.
+    block = {};
+    block["is-updated-" + variable] = q.If(
+      q.Exists(ref),
+      q.Equals([
+        q.Map(
+          Object.keys(update),
+          q.Lambda("key", q.Select(q.Var("key"), q.Get(ref), null))
+        ),
+        Object.values(update),
+      ]),
+      false, // won't be used, so this doesn't really matter
+    );
+    this.sections.push(block);
+
+    block = {};
     block[variable] = q.If(
-      // TODO: Check if needs to update
-      true,
-      q.Update(q.Var(variable), update),
+      q.Var("is-updated-" + variable),
       {},
+      q.Update(q.Var(variable), update),
     );
     this.sections.push(block);
     this.sections.push({
       result: q.If(
-        // TODO: Check if needs to update
-        true,
+        q.Var("is-updated-" + variable),
+        q.Concat([q.Var("result"), `${ref_to_log(ref)} is up to date\n`]),
         q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
-        q.Var("result"),
+      ),
+    });
+    this.sections.push({
+      errors: q.If(
+        q.Var("is-updated-" + ref_to_var(ref)),
+        q.Var("errors"), // no error if up to date
+        q.Append( // error: not up to date, cannot update
+          {
+            ref_name: ref_to_log(ref),
+            schema: update,
+            database: q.Get(ref),
+          },
+          q.Var("errors"),
+        ),
       ),
     });
   }
@@ -295,6 +329,13 @@ class QueryBuilder {
           data:       role.data,
           ttl:        role.ttl,
         },
+        // Only validate that name, data, and ttl are matching if the document
+        // is already present.
+        check_body: {
+          name,
+          data:       role.data,
+          ttl:        role.ttl,
+        }
       });
     }
   }
