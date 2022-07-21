@@ -289,7 +289,7 @@ class QueryBuilder {
     block[variable] = q.If(
       q.Var("is-updated-" + variable),
       {},
-      q.Update(q.Var(variable), update),
+      q.Select("ref", q.Update(q.Var(variable), update)),
     );
     this.sections.push(block);
     this.sections.push({
@@ -307,7 +307,9 @@ class QueryBuilder {
           {
             ref_name: ref_to_log(ref),
             schema: update,
-            database: q.Get(ref),
+            // We are updating a role, so it must have been created above, so we
+            // use that variable here.
+            database: q.Get(q.Var(variable)),
           },
           q.Var("errors"),
         ),
@@ -392,7 +394,7 @@ class QueryBuilder {
         ref,
         update: {
           privileges: this.resources.role_privileges(role.privileges),
-          membership: role.membership,
+          membership: this.resources.role_membership(role.membership),
         }
       });
     }
