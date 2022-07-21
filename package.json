@@ -1,20 +1,20 @@
 {
   "name": "@fauna-labs/serverless-fauna",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "A plugin to define resources in your Fauna database directly within your Serverless Framework applications.",
   "main": "index.js",
   "scripts": {
     "test": "jest --coverage"
   },
   "dependencies": {
-    "faunadb": "^4.2.0"
+    "faunadb": "^4.6.0"
   },
   "devDependencies": {
-    "jest": "^27.0.0",
+    "jest": "^28.0.0",
     "jest-expect-message": "^1.0.2"
   },
   "peerDependencies": {
-    "serverless": "2.x"
+    "serverless": "3.x"
   },
   "repository": {
     "type": "git",
