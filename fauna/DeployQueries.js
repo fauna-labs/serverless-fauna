@@ -157,7 +157,6 @@ class QueryBuilder {
     // A list of Let() blocks.
     this.sections = [
       { result: "\n" },
-      { errors: [] },
     ];
     // A Resources instance.
     this.resources = resources;
@@ -169,7 +168,6 @@ class QueryBuilder {
       this.sections,
       {
         result: q.Var("result"),
-        errors: q.Var("errors"),
       }
     );
   }
@@ -223,7 +221,7 @@ class QueryBuilder {
         q.Var("is-updated-" + ref_to_var(ref)),
         ref,
         // TODO: Update value if possible
-        ref,
+        q.Abort("cannot update " + ref_to_log(ref)),
       ),
       q.Select("ref", create_function_for_ref(ref)(body)),
     );
@@ -239,6 +237,9 @@ class QueryBuilder {
         q.Concat([q.Var("result"), `created ${ref_to_log(ref)}\n`]),
       ),
     });
+    // TODO: This is a much more readable way of handling errors, but it
+    // doesn't abort the transaction. Need to fix this.
+    /*
     this.sections.push({
       errors: q.If(
         q.Exists(ref),
@@ -257,6 +258,7 @@ class QueryBuilder {
         q.Var("errors"), // no error if created
       ),
     });
+    */
   }
   update({ ref, update }) {
     // First, clean up the update arguments
@@ -297,22 +299,6 @@ class QueryBuilder {
         q.Var("is-updated-" + variable),
         q.Concat([q.Var("result"), `${ref_to_log(ref)} is up to date\n`]),
         q.Concat([q.Var("result"), `updated ${ref_to_log(ref)}\n`]),
-      ),
-    });
-    this.sections.push({
-      errors: q.If(
-        q.Var("is-updated-" + ref_to_var(ref)),
-        q.Var("errors"), // no error if up to date
-        q.Append( // error: not up to date, cannot update
-          {
-            ref_name: ref_to_log(ref),
-            schema: update,
-            // We are updating a role, so it must have been created above, so we
-            // use that variable here.
-            database: q.Get(q.Var(variable)),
-          },
-          q.Var("errors"),
-        ),
       ),
     });
   }
