@@ -33,6 +33,8 @@ or using yarn
 $ yarn add @fauna-labs/serverless-fauna
 ```
 
+> NOTE: This package has not reached a 1.0 release yet.  Minor version releases may still contain breaking changes.  If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file.  For example, `"~0.2.0"` or `"~0.1.6"`
+
 ## Commands 
 This plugin listens to hooks from default serverless commands, and runs its own logic:
 
