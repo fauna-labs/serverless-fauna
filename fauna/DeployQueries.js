@@ -65,25 +65,25 @@ class Resources {
       if (this.collections.get(ref.id) !== undefined) {
         return q.Var(ref_to_var(ref));
       } else {
-        return q.Collection(name);
+        return q.Collection(ref.id);
       }
     } else if (ref.collection.id === "indexes") {
       if (this.indexes.get(ref.id) !== undefined) {
         return q.Var(ref_to_var(ref));
       } else {
-        return q.Index(name);
+        return q.Index(ref.id);
       }
     } else if (ref.collection.id === "functions") {
       if (this.functions.get(ref.id) !== undefined) {
         return q.Var(ref_to_var(ref));
       } else {
-        return q.Function(name);
+        return q.Function(ref.id);
       }
     } else if (ref.collection.id === "roles") {
       if (this.roles.get(ref.id) !== undefined) {
         return q.Var(ref_to_var(ref));
       } else {
-        return q.Role(name);
+        return q.Role(ref.id);
       }
     } else {
       throw new Exception("cannot transform ref: " + ref);
