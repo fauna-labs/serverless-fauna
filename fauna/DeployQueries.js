@@ -93,31 +93,62 @@ class Resources {
   // Updates an index source, so that all collection refs will use
   // the Var(collection-name) when needed. Modifies source, and returns
   // the source.
+  //
+  // This returns the new sources, and does not mutate sources.
   index_source(source) {
     // TODO: Read this: https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object
-    for (const obj of source) {
-      obj.collection = this.ref(obj.collection);
+    let new_source = [];
+    for (const [i, obj] of source.entries()) {
+      // Shallow copies obj
+      let new_obj = { ...obj };
+      new_obj.collection = this.ref(new_obj.collection);
+      new_source.push(new_obj);
     }
-    return source;
+    return new_source;
   }
   // Updates a role privileges list, so that all collection refs will use
   // the Var(collection-name) when needed, along with any other refs that
   // need to be transformed.
+  //
+  // This returns the new privileges, and does not mutate privileges.
   role_privileges(privileges) {
+    let new_privileges = [];
     for (let privilege of privileges) {
-      let resource = privilege.resource;
+      let new_privilege = { ...privilege };
       // If the collection is undefined, it means this is a global ref,
       // like Functions() or Collections(). If the collection is present,
       // then it is a specific ref, like Function("my_func"). For specific
       // refs, we need to map those to Var("function-my_func"), in case
       // it was created in this query.
+      let resource = privilege.resource;
       if (resource.collection === undefined) {
-        privilege.resource = resource;
+        new_privilege.resource = resource;
       } else {
-        privilege.resource = this.ref(resource);
+        new_privilege.resource = this.ref(resource);
       }
+      new_privileges.push(new_privilege);
     }
-    return privileges;
+    return new_privileges;
+  }
+  // Updates a role member list, so that all collection refs will use
+  // the Var(collection-name) when needed, along with any other refs that
+  // need to be transformed.
+  //
+  // This returns the new membership, and does not mutate membership.
+  role_membership(membership) {
+    let new_membership = [];
+    for (let member of membership) {
+      let new_member = { ...member };
+      // Same logic as role_privileges
+      let resource = member.resource;
+      if (resource.collection === undefined) {
+        new_member.resource = resource;
+      } else {
+        new_member.resource = this.ref(resource);
+      }
+      new_membership.push(new_member);
+    }
+    return new_membership;
   }
 }
 
