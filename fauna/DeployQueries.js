@@ -385,6 +385,40 @@ class QueryBuilder {
       });
     }
   }
+
+  build_delete(set, resource_name, schema_resources) {
+    // Each item we delete will produce a string, so we join that with `\n` to produce our log.
+    this.sections.push({
+      result: q.Concat([
+        q.Var("result"),
+        q.Concat(
+          q.Select("data", q.Map(q.Paginate(set, { size: 10000 }), q.Lambda(
+            "x",
+            q.If(
+              q.And(
+                // We are deleting things, so this resource must not exist in the schema
+                q.Not(q.ContainsValue(
+                  q.Select("id", q.Var("x")),
+                  Array.from(schema_resources.keys())
+                )),
+                // Make sure it was created by serverless
+                q.Select(["data", "created_by_serverless_plugin"], q.Get(q.Var("x")), false),
+                // Make sure we actually want it deleted
+                q.Equals(q.Select(["data", "deletion_policy"], q.Get(q.Var("x")), "retain"), "destroy"),
+              ),
+              q.Let({
+                name: q.Select("name", q.Get(q.Var("x"))),
+              }, q.Do(
+                q.Delete(q.Var("x")),
+                q.Format(`deleted ${resource_name} \`%s\`\n`, q.Var("name")),
+              )),
+              "",
+            )
+          )),
+        )),
+      ]),
+    });
+  }
 }
 
 module.exports = ({
@@ -401,6 +435,11 @@ module.exports = ({
   builder.build_empty_roles();
   builder.build_functions();
   builder.build_update_roles();
+
+  builder.build_delete(q.Collections(), "collection", resources.collections);
+  builder.build_delete(q.Indexes(),     "index",      resources.indexes);
+  builder.build_delete(q.Functions(),   "function",   resources.functions);
+  builder.build_delete(q.Roles(),       "role",       resources.roles);
 
   let query = builder.finish();
   console.log(beautify.js(query.toFQL(), { indent_size: 2, keep_array_indentation: true }));
