@@ -183,7 +183,7 @@ class QueryBuilder {
   // update query or the create query was performed. Because of this,
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
-  create({ ref, body, check_body = null }) {
+  create({ ref, body, check_body = null, required_keys }) {
     // First, clean up the query body
     for (const [key, value] of Object.entries(body)) {
       if (value === undefined) {
@@ -219,10 +219,35 @@ class QueryBuilder {
       q.If(
         q.Var("is-updated-" + ref_to_var(ref)),
         ref,
-        q.Select("ref", q.Update(
+        // Because Update() merges objects, and we want to replace them, we need to set
+        // all the fields we want to replace with `null`, so that we don't end up merging
+        // data.
+        q.Do(
+          q.Update(
+            ref,
+            // Collect all the keys we want into an object where each value is null
+            q.ToObject(
+              q.Map(
+                // This is all the keys in the database and in the schema
+                q.Intersection(
+                  // All the keys in the database
+                  q.Map(q.ToArray(q.Get(ref)), q.Lambda("x", q.Select(0, q.Var("x")))),
+                  // All the keys in the schema
+                  Object.keys(body).filter((x) => !required_keys.includes(x)),
+                ),
+                // Map each of those keys to null
+                q.Lambda("x", [q.Var("x"), null])
+              ),
+            ),
+          ),
+          // Now we actually do the update.
+          q.Update(
+            ref,
+            body,
+          ),
+          // Make sure to return the ref, as this is all within a Let block.
           ref,
-          body,
-        ))
+        ),
       ),
       q.Select("ref", create_function_for_ref(ref)(body)),
     );
@@ -317,6 +342,7 @@ class QueryBuilder {
           ttl_days:     collection.ttl_days,
           permissions:  collection.permissions,
         },
+        required_keys: ["name"],
       });
     }
   }
@@ -335,6 +361,7 @@ class QueryBuilder {
           data:        index.data,
           ttl:         index.ttl,
         },
+        required_keys: ["name", "source"],
       });
     }
   }
@@ -355,7 +382,8 @@ class QueryBuilder {
           name,
           data:       role.data,
           ttl:        role.ttl,
-        }
+        },
+        required_keys: ["name", "privileges"],
       });
     }
   }
@@ -371,6 +399,7 @@ class QueryBuilder {
           role: func.role instanceof values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
         },
+        required_keys: ["name", "body"],
       });
     }
   }
