@@ -219,8 +219,10 @@ class QueryBuilder {
       q.If(
         q.Var("is-updated-" + ref_to_var(ref)),
         ref,
-        // TODO: Update value if possible
-        q.Abort("cannot update " + ref_to_log(ref)),
+        q.Select("ref", q.Update(
+          ref,
+          body,
+        ))
       ),
       q.Select("ref", create_function_for_ref(ref)(body)),
     );
