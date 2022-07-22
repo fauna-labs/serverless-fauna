@@ -5,18 +5,25 @@ const config = require('../config')
 const { configForDeploy, defaultData } = require('../test.data')
 
 async function faunaDeploy({ testClient, config, debugResp }) {
-  let isSchemaUpdated
-  for (const { query, name } of DeployQueries(config)) {
-    await testClient.query(query).then((resp) => {
-      if (debugResp) {
-        console.info('----------' + name + '----------')
-        console.info(Expr.toString(query))
-        console.info(resp)
-        console.info('------------------------------')
+  const query = DeployQueries(config);
+  let isSchemaUpdated = false;
+  await testClient.query(query).then((res) => {
+    for (const line of res.result.split('\n')) {
+      if (line.length != 0 && !line.endsWith("up to date")) {
+        isSchemaUpdated = true;
+        break
       }
-      if (resp) isSchemaUpdated = true
-    })
-  }
+    }
+    if (debugResp) {
+      console.info('----------' + name + '----------')
+      console.info(Expr.toString(query))
+      console.info(res.result)
+      console.info('------------------------------')
+    }
+  }).catch((err) => {
+    console.log(err);
+    throw err;
+  })
 
   return { isSchemaUpdated }
 }
@@ -66,7 +73,7 @@ describe('Fauna deploy', () => {
         config: configForDeploy,
       })
 
-      expect(isSchemaUpdated, 'schema updated').toBeTruthy()
+      expect(isSchemaUpdated).toBeTruthy()
 
       const { collections, indexes, functions, roles } = await testClient.query(
         q.Let(
@@ -84,7 +91,7 @@ describe('Fauna deploy', () => {
 
       const omitDynamicFields = ({ ts, ref, ...rest }) => rest
 
-      expect(collections.data.map(omitDynamicFields), 'collections').toEqual([
+      expect(collections.data.map(omitDynamicFields)).toEqual([
         {
           history_days: 30,
           name: 'users',
@@ -100,7 +107,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(indexes.data.map(omitDynamicFields), 'indexes').toEqual([
+      expect(indexes.data.map(omitDynamicFields)).toEqual([
         {
           active: true,
           serialized: true,
@@ -123,7 +130,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(functions.data.map(omitDynamicFields), 'functions').toEqual([
+      expect(functions.data.map(omitDynamicFields)).toEqual([
         {
           name: 'register',
           data: defaultData,
@@ -140,7 +147,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(roles.data.map(omitDynamicFields), 'roles').toEqual([
+      expect(roles.data.map(omitDynamicFields)).toEqual([
         {
           name: 'test_circular_dependency',
           data: defaultData,

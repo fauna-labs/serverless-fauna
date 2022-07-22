@@ -1,0 +1,26 @@
+provider:
+  name: "aws"
+plugins:
+  # - "@fauna-labs/serverless-fauna"
+  - "."
+service: "foo"
+fauna:
+  client:
+    secret: secret
+    domain: localhost
+    port: 8443
+    scheme: http
+  collections:
+    movies:
+      name: movies
+  roles:
+    role_1:
+      name: role_1
+      privileges:
+        - collection: "asdf"
+          actions:
+            read: true
+  functions:
+    my_func:
+      name: my_func
+      body: Lambda("x", Do(Now()))
