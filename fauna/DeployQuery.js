@@ -183,7 +183,11 @@ class QueryBuilder {
   // update query or the create query was performed. Because of this,
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
-  create({ ref, body, check_body = null, required_keys }) {
+  //
+  // `keys_to_nullify` is a list of all the keys that need to be nullified
+  // before being updated. This is usually only the `data` field, as Update()
+  // will merge the new value with the old one unless we nullify it.
+  create({ ref, body, check_body = null, keys_to_nullify }) {
     // First, clean up the query body
     for (const [key, value] of Object.entries(body)) {
       if (value === undefined) {
@@ -233,7 +237,7 @@ class QueryBuilder {
                   // All the keys in the database
                   q.Map(q.ToArray(q.Get(ref)), q.Lambda("x", q.Select(0, q.Var("x")))),
                   // All the keys in the schema
-                  Object.keys(body).filter((x) => !required_keys.includes(x)),
+                  keys_to_nullify,
                 ),
                 // Map each of those keys to null
                 q.Lambda("x", [q.Var("x"), null])
@@ -342,7 +346,7 @@ class QueryBuilder {
           ttl_days:     collection.ttl_days,
           permissions:  collection.permissions,
         },
-        required_keys: ["name"],
+        keys_to_nullify: ["data", "permissions"],
       });
     }
   }
@@ -361,7 +365,7 @@ class QueryBuilder {
           data:        index.data,
           ttl:         index.ttl,
         },
-        required_keys: ["name", "source"],
+        keys_to_nullify: ["data"],
       });
     }
   }
@@ -383,7 +387,7 @@ class QueryBuilder {
           data:       role.data,
           ttl:        role.ttl,
         },
-        required_keys: ["name", "privileges"],
+        keys_to_nullify: ["data"],
       });
     }
   }
@@ -399,7 +403,7 @@ class QueryBuilder {
           role: func.role instanceof values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
         },
-        required_keys: ["name", "body"],
+        keys_to_nullify: ["data"],
       });
     }
   }
