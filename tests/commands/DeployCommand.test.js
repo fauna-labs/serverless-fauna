@@ -1,5 +1,5 @@
 const fauna = require('faunadb')
-const { query: q } = fauna
+const { query: q, values } = fauna
 const DeployQueriesMock = jest
   .fn()
   .mockReturnValue([{ query: q.Now(), name: 'mock' }])
@@ -64,7 +64,7 @@ describe('DeployCommand', () => {
         expect(command.functionAdapter({ ...fn, role: 'custom' })).toEqual({
           ...compare,
           data: { ...command.defaultMetadata, ...compare.data },
-          role: q.Role('custom'),
+          role: new values.Ref("custom", new values.Ref("roles")),
         })
       })
     })
@@ -78,7 +78,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
             },
           },
           {
@@ -89,10 +89,10 @@ describe('DeployCommand', () => {
               data: command.defaultMetadata,
               source: [
                 {
-                  collection: q.Collection('source'),
+                  collection: new values.Ref("source", new values.Ref("collections")),
                 },
                 {
-                  collection: q.Collection('source2'),
+                  collection: new values.Ref("source2", new values.Ref("collections")),
                 },
               ],
             },
@@ -108,7 +108,7 @@ describe('DeployCommand', () => {
               data: command.defaultMetadata,
               source: [
                 {
-                  collection: q.Collection('source'),
+                  collection: new values.Ref("source", new values.Ref("collections")),
                   fields: {
                     bind: q.Query(BaseFQL),
                   },
@@ -135,7 +135,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
               terms: [
                 { field: ['data', 'field1'] },
                 { field: ['data', 'field2'] },
@@ -155,7 +155,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
               terms: [
                 { field: ['data', 'field1'] },
                 { field: ['data', 'field2'] },
@@ -182,7 +182,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
               values: [
                 { field: ['data', 'field1'] },
                 { field: ['data', 'field2'] },
@@ -202,7 +202,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
               values: [
                 { field: ['data', 'field1'] },
                 { field: ['data', 'field2'] },
@@ -222,7 +222,7 @@ describe('DeployCommand', () => {
             output: {
               name: 'name',
               data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
+              source: [{ collection: new values.Ref("source", new values.Ref("collections")) }],
               values: [{ field: ['data', 'field1'], reverse: true }],
             },
           },
@@ -262,10 +262,10 @@ describe('DeployCommand', () => {
           name: 'name',
           data: command.defaultMetadata,
           privileges: [
-            { resource: q.Index('index'), actions: { read: true } },
-            { resource: q.Function('function'), actions: { read: true } },
-            { resource: q.Databases(), actions: { read: true } },
-            { resource: q.Keys(), actions: { read: true } },
+            { resource: new values.Ref("index", new values.Ref("indexes")), actions: { read: true } },
+            { resource: new values.Ref("function", new values.Ref("functions")), actions: { read: true } },
+            { resource: new values.Ref("databases"), actions: { read: true } },
+            { resource: new values.Ref("keys"), actions: { read: true } },
           ],
         })
       })
@@ -283,7 +283,7 @@ describe('DeployCommand', () => {
           data: command.defaultMetadata,
           privileges: [
             {
-              resource: q.Collection('collection'),
+              resource: new values.Ref("collection", new values.Ref("collections")),
               actions: { read: q.Query(BaseFQL) },
             },
           ],
@@ -306,11 +306,11 @@ describe('DeployCommand', () => {
               data: command.defaultMetadata,
               privileges: [
                 {
-                  resource: q.Collection('collection'),
+                  resource: new values.Ref("collection", new values.Ref("collections")),
                   actions: { read: true },
                 },
               ],
-              membership: [{ resource: q.Collection('membership') }],
+              membership: [{ resource: new values.Ref("membership", new values.Ref("collections")) }],
             },
           },
 
@@ -331,13 +331,13 @@ describe('DeployCommand', () => {
               data: command.defaultMetadata,
               privileges: [
                 {
-                  resource: q.Collection('collection'),
+                  resource: new values.Ref("collection", new values.Ref("collections")),
                   actions: { read: true },
                 },
               ],
               membership: [
                 {
-                  resource: q.Collection('membership'),
+                  resource: new values.Ref("membership", new values.Ref("collections")),
                   predicate: q.Query(BaseFQL),
                 },
               ],
@@ -408,19 +408,16 @@ describe('DeployCommand', () => {
             {
               name: 'test',
               data: { ...defaultData, deletion_policy: 'retain' },
-              source: [{ collection: q.Collection('test') }],
+              source: [{ collection: new values.Ref("test", new values.Ref("collections")) }],
             },
           ],
-          roles: {
-            createWithoutPrivileges: [],
-            update: [
-              {
-                name: 'test',
-                data: { ...defaultData, deletion_policy: 'retain' },
-                privileges: [],
-              },
-            ],
-          },
+          roles: [
+            {
+              name: 'test',
+              data: { ...defaultData, deletion_policy: 'retain' },
+              privileges: [],
+            },
+          ],
           functions: [
             {
               name: 'test',
@@ -463,7 +460,9 @@ describe('DeployCommand', () => {
         {
           name: 'user_by_email',
           data: command.defaultMetadata,
-          source: [{ collection: q.Collection('users') }],
+          source: [
+            { collection: new values.Ref("users", new values.Ref("collections")) }
+          ],
         },
       ],
       functions: [
@@ -474,24 +473,24 @@ describe('DeployCommand', () => {
           role: null,
         },
       ],
-      roles: {
-        createWithoutPrivileges: [],
-        update: [
-          {
-            name: 'customer',
-            data: command.defaultMetadata,
-            membership: [
-              {
-                resource: q.Collection('users'),
-                predicate: q.Query(BaseFQL),
-              },
-            ],
-            privileges: [
-              { resource: q.Index('user_by_email'), actions: { read: true } },
-            ],
-          },
-        ],
-      },
+      roles: [
+        {
+          name: 'customer',
+          data: command.defaultMetadata,
+          membership: [
+            {
+              resource: new values.Ref("users", new values.Ref("collections")),
+              predicate: q.Query(BaseFQL),
+            },
+          ],
+          privileges: [
+            {
+              resource: new values.Ref("user_by_email", new values.Ref("indexes")),
+              actions: { read: true }
+            },
+          ],
+        },
+      ],
     })
   })
 
