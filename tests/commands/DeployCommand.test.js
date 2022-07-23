@@ -119,7 +119,7 @@ describe('DeployCommand', () => {
         ]
 
         for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
+          expect(command.indexAdapter(input)).toEqual(output)
         }
       })
 
@@ -166,7 +166,7 @@ describe('DeployCommand', () => {
         ]
 
         for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
+          expect(command.indexAdapter(input)).toEqual(output)
         }
       })
 
@@ -229,7 +229,7 @@ describe('DeployCommand', () => {
         ]
 
         for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
+          expect(command.indexAdapter(input)).toEqual(output)
         }
       })
     })
@@ -346,7 +346,7 @@ describe('DeployCommand', () => {
         ]
 
         for (let { label, input, output } of cases) {
-          expect(command.roleAdapter(input), label).toEqual(output)
+          expect(command.roleAdapter(input)).toEqual(output)
         }
       })
 
