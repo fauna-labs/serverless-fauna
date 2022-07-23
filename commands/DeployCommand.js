@@ -208,7 +208,7 @@ class DeployCommand {
           Array.isArray(membership) ? membership : [membership]
         ).map((m) => {
           return {
-            resource: q.Collection(typeof m === 'string' ? m : m.resource),
+            resource: new values.Ref(typeof m === 'string' ? m : m.resource, new values.Ref("collections")),
             ...(m.predicate && { predicate: baseEvalFqlQuery(m.predicate) }),
           }
         })
