@@ -512,8 +512,8 @@ describe('DeployCommand', () => {
         },
       }
       expect(() =>
-        command.handleQueryError({ errResp, name: 'query' })
-      ).toThrow('query => description')
+        command.handleQueryError({ errResp })
+      ).toThrow('description')
     })
 
     test('throw failures desc', () => {
@@ -532,9 +532,9 @@ describe('DeployCommand', () => {
         },
       }
       expect(() =>
-        command.handleQueryError({ errResp, name: 'query' })
+        command.handleQueryError({ errResp })
       ).toThrow(
-        'query => `failure_field`: failure_desc; `failure_field_2`: failure_desc_2'
+        '`failure_field`: failure_desc; `failure_field_2`: failure_desc_2'
       )
     })
   })
