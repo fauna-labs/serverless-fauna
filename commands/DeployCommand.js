@@ -87,14 +87,17 @@ class DeployCommand {
     throw new Error([name, error.description].join(' => '))
   }
 
-  mergeMetadata(data = {}) {
-    return { ...this.defaultMetadata, ...data }
+  mergeMetadata({ data = {}, deletion_policy = "destroy" }) {
+    return { ...this.defaultMetadata, ...data, deletion_policy }
   }
 
   collectionAdapter(collection) {
     return {
       ...collection,
-      data: this.mergeMetadata(collection.data),
+      data: this.mergeMetadata({
+        data: collection.data,
+        deletion_policy: collection.deletion_policy,
+      }),
     }
   }
 
@@ -102,7 +105,10 @@ class DeployCommand {
     try {
       return {
         ...fn,
-        data: this.mergeMetadata(fn.data),
+        data: this.mergeMetadata({
+          data: fn.data,
+          deletion_policy: fn.deletion_policy,
+        }),
         role: fn.role
           ? ['admin', 'server'].includes(fn.role)
             ? fn.role
@@ -119,7 +125,10 @@ class DeployCommand {
     try {
       return {
         ...index,
-        data: this.mergeMetadata(index.data),
+        data: this.mergeMetadata({
+          data: index.data,
+          deletion_policy: index.deletion_policy,
+        }),
         source: (Array.isArray(index.source)
           ? index.source
           : [index.source]
@@ -207,7 +216,10 @@ class DeployCommand {
     try {
       const adaptedRole = {
         ...role,
-        data: this.mergeMetadata(role.data),
+        data: this.mergeMetadata({
+          data: role.data,
+          deletion_policy: role.deletion_policy,
+        }),
       }
 
       if (membership) {
