@@ -95,21 +95,31 @@ class DeployCommand {
     throw new Error([name, error.description].join(' => '))
   }
 
+  /// Returns a new object, with the key 'deletion_policy` removed.
+  removeDeletionPolicy(obj) {
+    const { deletion_policy, ...newObj } = obj
+    return newObj
+  }
+  // Throws an error if the given deletion_policy is not "destroy" or "retain".
   validateDeletionPolicty(deletion_policy) {
-    if (deletion_policy !== "destroy" && deletion_policy !== "retain") {
+    if (deletion_policy !== undefined && deletion_policy !== "destroy" && deletion_policy !== "retain") {
       throw new Error(`invalid deletion policty: '${deletion_policy}' (expected 'destroy' or 'retain')`)
     }
   }
 
-  mergeMetadata({ data = {}, deletion_policy = "destroy" }) {
+  mergeMetadata({ data = {}, deletion_policy }) {
     this.validateDeletionPolicty(deletion_policy)
-    return { ...this.defaultMetadata, ...data, deletion_policy }
+    if (deletion_policy === undefined) {
+      return { ...this.defaultMetadata, ...data }
+    } else {
+      return { ...this.defaultMetadata, ...data, deletion_policy }
+    }
   }
 
   collectionAdapter(collection) {
     try {
       return {
-        ...collection,
+        ...this.removeDeletionPolicy(collection),
         data: this.mergeMetadata({
           data: collection.data,
           deletion_policy: collection.deletion_policy,
@@ -123,7 +133,7 @@ class DeployCommand {
   functionAdapter(fn) {
     try {
       return {
-        ...fn,
+        ...this.removeDeletionPolicy(fn),
         data: this.mergeMetadata({
           data: fn.data,
           deletion_policy: fn.deletion_policy,
@@ -143,7 +153,7 @@ class DeployCommand {
   indexAdapter(index) {
     try {
       return {
-        ...index,
+        ...this.removeDeletionPolicy(index),
         data: this.mergeMetadata({
           data: index.data,
           deletion_policy: index.deletion_policy,
@@ -234,7 +244,7 @@ class DeployCommand {
   roleAdapter({ privileges, membership, ...role }) {
     try {
       const adaptedRole = {
-        ...role,
+        ...this.removeDeletionPolicy(role),
         data: this.mergeMetadata({
           data: role.data,
           deletion_policy: role.deletion_policy,
