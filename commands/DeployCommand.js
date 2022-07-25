@@ -88,16 +88,23 @@ class DeployCommand {
   }
 
   mergeMetadata({ data = {}, deletion_policy = "destroy" }) {
+    if (deletion_policy !== "destroy" && deletion_policy !== "retain") {
+      throw new Error(`invalid deletion policty: '${deletion_policy}' (expected 'destroy' or 'retain')`)
+    }
     return { ...this.defaultMetadata, ...data, deletion_policy }
   }
 
   collectionAdapter(collection) {
-    return {
-      ...collection,
-      data: this.mergeMetadata({
-        data: collection.data,
-        deletion_policy: collection.deletion_policy,
-      }),
+    try {
+      return {
+        ...collection,
+        data: this.mergeMetadata({
+          data: collection.data,
+          deletion_policy: collection.deletion_policy,
+        }),
+      }
+    } catch (error) {
+      throw new Error(`collection.${collection.name}: ${error.message}`)
     }
   }
 
