@@ -53,6 +53,7 @@ module.exports = {
   type: 'object',
   properties: {
     name: { type: 'string' },
+    deletion_policy: { type: 'string' },
     active: { type: 'boolean' },
     source: {
       oneOf: [
