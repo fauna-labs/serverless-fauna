@@ -18,6 +18,14 @@ class DeployCommand {
   }
 
   constructor({ config, faunaClient, logger }) {
+    if (config.deletion_policy !== undefined) {
+      try {
+        this.validateDeletionPolicty(config.deletion_policy)
+      } catch (e) {
+        logger.error(e);
+        throw e;
+      }
+    }
     this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
@@ -87,10 +95,14 @@ class DeployCommand {
     throw new Error([name, error.description].join(' => '))
   }
 
-  mergeMetadata({ data = {}, deletion_policy = "destroy" }) {
+  validateDeletionPolicty(deletion_policy) {
     if (deletion_policy !== "destroy" && deletion_policy !== "retain") {
       throw new Error(`invalid deletion policty: '${deletion_policy}' (expected 'destroy' or 'retain')`)
     }
+  }
+
+  mergeMetadata({ data = {}, deletion_policy = "destroy" }) {
+    this.validateDeletionPolicty(deletion_policy)
     return { ...this.defaultMetadata, ...data, deletion_policy }
   }
 
