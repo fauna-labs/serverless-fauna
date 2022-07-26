@@ -5,7 +5,6 @@ const {
   ReplaceObject,
   FilterServerlessResourceWithDestroyPolicy,
 } = require('./utility')
-const beautify = require('js-beautify');
 
 // Converts a ref, such as Collection("foo") or Function("my_func"),
 // into the variable name for said reference.
@@ -402,9 +401,7 @@ module.exports = ({
   builder.build_functions();
   builder.build_update_roles();
 
-  let query = builder.finish();
-  console.log(beautify.js(query.toFQL(), { indent_size: 2, keep_array_indentation: true }));
-  return query;
+  return builder.finish();
 }
 
 /**
