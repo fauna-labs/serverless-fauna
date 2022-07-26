@@ -380,7 +380,7 @@ class QueryBuilder {
         ref,
         update: {
           privileges: this.resources.role_privileges(role.privileges),
-          membership: this.resources.role_membership(role.membership),
+          membership: this.resources.role_membership(role.membership || []),
         }
       });
     }
