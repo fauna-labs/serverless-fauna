@@ -1,4 +1,4 @@
-const DeployQueries = require('../fauna/DeployQueries')
+const DeployQuery = require('../fauna/DeployQuery')
 const { query: q, values } = require('faunadb')
 const { ResourceMap } = require('../fauna/utility')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
@@ -41,9 +41,9 @@ class DeployCommand {
       // First pass: we convert all yaml values into the arguments of a Create*()
       // query. This is done by calling the `this.*Adapter()` functinos.
       //
-      // Second pass: we call DeployQueries. This transforms all those Create*()
+      // Second pass: we call DeployQuery. This transforms all those Create*()
       // queries into one large Let() block, which will build everything listed.
-      const query = DeployQueries({
+      const query = DeployQuery({
         collections: Object.values(collections).map((collection) => this.collectionAdapter(collection)),
         indexes: Object.values(indexes).map((index) => this.indexAdapter(index)),
         functions: Object.values(functions).map((fn) => this.functionAdapter(fn)),
