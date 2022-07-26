@@ -1,7 +1,8 @@
-const DeployQueries = require('../fauna/DeployQueries')
-const { query: q } = require('faunadb')
+const DeployQuery = require('../fauna/DeployQuery')
+const { query: q, values } = require('faunadb')
 const { ResourceMap } = require('../fauna/utility')
 const baseEvalFqlQuery = require('../fauna/baseEvalFqlQuery')
+const util = require('util')
 
 class DeployCommand {
   command = {
@@ -37,54 +38,40 @@ class DeployCommand {
     try {
       this.logger.info('Schema updating in process...')
 
-      const queries = DeployQueries({
-        roles: this.splitAndAdaptRoles(Object.values(roles)),
-        collections: Object.values(collections).map((collection) =>
-          this.collectionAdapter(collection)
-        ),
-        functions: Object.values(functions).map((fn) =>
-          this.functionAdapter(fn)
-        ),
-        indexes: Object.values(indexes).map((index) =>
-          this.indexAdapter(index)
-        ),
+      // First pass: we convert all yaml values into the arguments of a Create*()
+      // query. This is done by calling the `this.*Adapter()` functinos.
+      //
+      // Second pass: we call DeployQuery. This transforms all those Create*()
+      // queries into one large Let() block, which will build everything listed.
+      const query = DeployQuery({
+        collections: Object.values(collections).map((collection) => this.collectionAdapter(collection)),
+        indexes: Object.values(indexes).map((index) => this.indexAdapter(index)),
+        functions: Object.values(functions).map((fn) => this.functionAdapter(fn)),
+        roles: Object.values(roles).map((role) => this.roleAdapter(role)),
       })
 
-      let isSchemaUpdated
-      for (const { query, name, log } of queries) {
-        await this.faunaClient
-          .query(query)
-          .then((resp) => {
-            if (resp) {
-              isSchemaUpdated = true
-            }
-
-            if (resp && log) {
-              this.logger.success(resp)
-            }
-          })
-          .catch((errResp) => this.handleQueryError({ errResp, name }))
-      }
-
-      if (!isSchemaUpdated) {
-        this.logger.success('Schema up to date')
-      }
+      await this.faunaClient
+        .query(query)
+        .then((res) => {
+          this.logger.success(res.result);
+        })
+        .catch((errResp) => this.handleQueryError({ errResp }))
     } catch (error) {
       this.logger.error(error)
     }
   }
 
-  handleQueryError({ errResp, name }) {
+  handleQueryError({ errResp }) {
     if (!errResp.requestResult) throw errResp
     const error = errResp.requestResult.responseContent.errors[0]
     if (error.failures) {
       const failures = error.failures
         .map((f) => [`\`${f.field}\``, f.description].join(': '))
         .join('; ')
-      throw new Error([name, failures].join(' => '))
+      throw new Error(failures)
     }
 
-    throw new Error([name, error.description].join(' => '))
+    throw new Error(error.description)
   }
 
   mergeMetadata(data = {}) {
@@ -100,14 +87,19 @@ class DeployCommand {
 
   functionAdapter(fn) {
     try {
+      let role = null;
+      // Only modify role if it is set.
+      if (fn.role) {
+        if (fn.role === "admin" || fn.role === "server") {
+          role = fn.role;
+        } else {
+          role = new values.Ref(fn.role, new values.Ref("roles"));
+        }
+      }
       return {
         ...fn,
         data: this.mergeMetadata(fn.data),
-        role: fn.role
-          ? ['admin', 'server'].includes(fn.role)
-            ? fn.role
-            : q.Role(fn.role)
-          : null,
+        role,
         body: baseEvalFqlQuery(fn.body),
       }
     } catch (error) {
@@ -134,8 +126,9 @@ class DeployCommand {
 
   indexSourceAdapter(source) {
     const adaptedSource = {
-      collection: q.Collection(
-        typeof source === 'string' ? source : source.collection
+      collection: new values.Ref(
+        typeof source === 'string' ? source : source.collection,
+        new values.Ref("collections"),
       ),
     }
 

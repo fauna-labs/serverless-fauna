@@ -1,4 +1,5 @@
 const { query: q } = require('faunadb')
+const { Ref } = require('faunadb').values
 
 const BaseFQL = q.Lambda('ref', [ q.Var('ref'), "this/is/not/a/comment" ])
 const BaseFQLString = `
@@ -29,7 +30,7 @@ const configForDeploy = {
     {
       name: 'user_by_email',
       data: defaultData,
-      source: [{ collection: q.Collection('users') }],
+      source: [{ collection: new Ref('users', new Ref('collections')) }],
       terms: [{ field: ['data', 'test'] }],
     },
   ],
@@ -39,60 +40,43 @@ const configForDeploy = {
       name: 'test_circular_dependency',
       data: defaultData,
       body: q.Query(BaseFQL),
-      role: q.Role('test_circular_dependency'),
+      role: new Ref('test_circular_dependency', new Ref('roles')),
     },
   ],
-  roles: {
-    createWithoutPrivileges: [
-      {
-        name: 'test_circular_dependency',
-        data: defaultData,
-        membership: [
-          {
-            resource: q.Collection('users'),
-            predicate: q.Query(BaseFQL),
-          },
-        ],
-        privileges: [
-          {
-            resource: q.Function('test_circular_dependency'),
-            actions: { call: true },
-          },
-        ],
-      },
-    ],
-    update: [
-      {
-        name: 'test_circular_dependency',
-        data: defaultData,
-        membership: [
-          {
-            resource: q.Collection('users'),
-            predicate: q.Query(BaseFQL),
-          },
-        ],
-        privileges: [
-          {
-            resource: q.Function('test_circular_dependency'),
-            actions: { call: true },
-          },
-        ],
-      },
-      {
-        name: 'customer',
-        data: defaultData,
-        membership: [
-          {
-            resource: q.Collection('users'),
-            predicate: q.Query(BaseFQL),
-          },
-        ],
-        privileges: [
-          { resource: q.Index('user_by_email'), actions: { read: true } },
-        ],
-      },
-    ],
-  },
+  roles: [
+    {
+      name: 'test_circular_dependency',
+      data: defaultData,
+      membership: [
+        {
+          resource: new Ref('users', new Ref('collections')),
+          predicate: q.Query(BaseFQL),
+        },
+      ],
+      privileges: [
+        {
+          resource: new Ref('test_circular_dependency', new Ref('functions')),
+          actions: { call: true },
+        },
+      ],
+    },
+    {
+      name: 'customer',
+      data: defaultData,
+      membership: [
+        {
+          resource: new Ref('users', new Ref('collections')),
+          predicate: q.Query(BaseFQL),
+        },
+      ],
+      privileges: [
+        {
+          resource: new Ref('user_by_email', new Ref('indexes')),
+          actions: { read: true },
+        },
+      ],
+    },
+  ],
 }
 
 module.exports = {

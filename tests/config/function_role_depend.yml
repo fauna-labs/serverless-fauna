@@ -1,0 +1,26 @@
+# Example of a function that depends on a role that depends on said function
+
+provider:
+  name: "aws"
+plugins:
+  # - "@fauna-labs/serverless-fauna"
+  - "."
+service: "foo"
+fauna:
+  client:
+    secret: secret
+    domain: localhost
+    port: 8443
+    scheme: http
+  functions:
+    my_func:
+      name: my_func
+      body: Lambda("x", Do(Now()))
+      role: call_my_func
+  roles:
+    call_my_func:
+      name: call_my_func
+      privileges:
+        - function: ${self:fauna.functions.my_func.name}
+          actions:
+            call: true
