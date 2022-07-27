@@ -183,7 +183,11 @@ class QueryBuilder {
   // update query or the create query was performed. Because of this,
   // the ref needs to be a collection, index, function, or role ref,
   // so that we can log it correctly.
-  create({ ref, body, check_body = null }) {
+  //
+  // `keys_to_nullify` is a list of all the keys that need to be nullified
+  // before being updated. This is usually only the `data` field, as Update()
+  // will merge the new value with the old one unless we nullify it.
+  create({ ref, body, check_body = null, keys_to_nullify }) {
     // First, clean up the query body
     for (const [key, value] of Object.entries(body)) {
       if (value === undefined) {
@@ -219,8 +223,35 @@ class QueryBuilder {
       q.If(
         q.Var("is-updated-" + ref_to_var(ref)),
         ref,
-        // TODO: Update value if possible
-        q.Abort("cannot update " + ref_to_log(ref)),
+        // Because Update() merges objects, and we want to replace them, we need to set
+        // all the fields we want to replace with `null`, so that we don't end up merging
+        // data.
+        q.Do(
+          q.Update(
+            ref,
+            // Collect all the keys we want into an object where each value is null
+            q.ToObject(
+              q.Map(
+                // This is all the keys in the database and in the schema
+                q.Intersection(
+                  // All the keys in the database
+                  q.Map(q.ToArray(q.Get(ref)), q.Lambda("x", q.Select(0, q.Var("x")))),
+                  // All the keys in the schema
+                  keys_to_nullify,
+                ),
+                // Map each of those keys to null
+                q.Lambda("x", [q.Var("x"), null])
+              ),
+            ),
+          ),
+          // Now we actually do the update.
+          q.Update(
+            ref,
+            body,
+          ),
+          // Make sure to return the ref, as this is all within a Let block.
+          ref,
+        ),
       ),
       q.Select("ref", create_function_for_ref(ref)(body)),
     );
@@ -315,6 +346,7 @@ class QueryBuilder {
           ttl_days:     collection.ttl_days,
           permissions:  collection.permissions,
         },
+        keys_to_nullify: ["data", "permissions"],
       });
     }
   }
@@ -333,6 +365,7 @@ class QueryBuilder {
           data:        index.data,
           ttl:         index.ttl,
         },
+        keys_to_nullify: ["data"],
       });
     }
   }
@@ -353,7 +386,8 @@ class QueryBuilder {
           name,
           data:       role.data,
           ttl:        role.ttl,
-        }
+        },
+        keys_to_nullify: ["data"],
       });
     }
   }
@@ -369,6 +403,7 @@ class QueryBuilder {
           role: func.role instanceof values.Ref ? this.resources.ref(func.role) : func.role,
           ttl:  func.ttl,
         },
+        keys_to_nullify: ["data"],
       });
     }
   }
