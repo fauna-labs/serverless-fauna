@@ -223,7 +223,6 @@ describe('Fauna deploy', () => {
         ),
       }
 
-      console.log(updateConfig.functions);
       await faunaDeploy({
         testClient,
         config: updateConfig,
