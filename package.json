@@ -4,6 +4,7 @@
   "description": "A plugin to define resources in your Fauna database directly within your Serverless Framework applications.",
   "main": "index.js",
   "scripts": {
+    "fmt": "prettier --write .",
     "test": "jest --coverage"
   },
   "dependencies": {
@@ -11,7 +12,8 @@
   },
   "devDependencies": {
     "jest": "^28.0.0",
-    "jest-expect-message": "^1.0.2"
+    "jest-expect-message": "^1.0.2",
+    "prettier": "^2.7.1"
   },
   "peerDependencies": {
     "serverless": "3.x"
