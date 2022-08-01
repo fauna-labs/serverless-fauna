@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "fmt": "prettier --write .",
+    "lint": "eslint --ext .js . && prettier --check .",
     "test": "jest --coverage"
   },
   "dependencies": {
