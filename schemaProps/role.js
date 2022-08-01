@@ -86,6 +86,7 @@ module.exports = {
   required: ['name', 'privileges'],
   properties: {
     name: { type: 'string' },
+    deletion_policy: { type: 'string' },
     membership: {
       anyOf: [
         { type: 'string' },

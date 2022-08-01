@@ -67,6 +67,22 @@ describe('DeployCommand', () => {
           role: q.Role('custom'),
         })
       })
+
+      test('with deletion policy destroy', () => {
+        expect(command.functionAdapter({ ...fn, deletion_policy: 'destroy' })).toEqual({
+          ...compare,
+          data: { ...command.defaultMetadata, ...compare.data, deletion_policy: 'destroy' },
+        })
+      })
+      test('with deletion policy retain', () => {
+        expect(command.functionAdapter({ ...fn, deletion_policy: 'retain' })).toEqual({
+          ...compare,
+          data: { ...command.defaultMetadata, ...compare.data, deletion_policy: 'retain' },
+        })
+      })
+      test('with invalid deletion policy', () => {
+        expect(() => command.functionAdapter({ ...fn, deletion_policy: 'ahh' })).toThrow()
+      })
     })
 
     describe('IndexAdapter', () => {
@@ -101,11 +117,15 @@ describe('DeployCommand', () => {
             label: 'source object',
             input: {
               name: 'name',
+              deletion_policy: 'retain',
               source: { collection: 'source', fields: { bind: BaseFQLString } },
             },
             output: {
               name: 'name',
-              data: command.defaultMetadata,
+              data: {
+                ...command.defaultMetadata,
+                deletion_policy: 'retain',
+              },
               source: [
                 {
                   collection: q.Collection('source'),
@@ -129,12 +149,16 @@ describe('DeployCommand', () => {
             label: 'only fields',
             input: {
               name: 'name',
+              deletion_policy: 'retain',
               source: 'source',
               terms: { fields: ['data.field1', 'data.field2'] },
             },
             output: {
               name: 'name',
-              data: command.defaultMetadata,
+              data: {
+                ...command.defaultMetadata,
+                deletion_policy: 'retain',
+              },
               source: [{ collection: q.Collection('source') }],
               terms: [
                 { field: ['data', 'field1'] },
@@ -235,6 +259,24 @@ describe('DeployCommand', () => {
     })
 
     describe('RoleAdapter', () => {
+      test('valid deletion_policy', () => {
+        expect(command.roleAdapter({
+          name: 'name',
+          deletion_policy: 'retain',
+          privileges: [],
+        })).toEqual({
+          name: 'name',
+          data: { ...command.defaultMetadata, deletion_policy: 'retain' },
+          privileges: [],
+        })
+      })
+      test('invalid deletion_policy', () => {
+        expect(() => command.roleAdapter({
+          name: 'name',
+          deletion_policy: 'invalid',
+        })).toThrow()
+      })
+
       test('boolean privileges', () => {
         expect(
           command.roleAdapter({
@@ -386,7 +428,10 @@ describe('DeployCommand', () => {
           config: {
             deletion_policy: 'retain',
             collections: { test: { name: 'test' } },
-            indexes: { test: { name: 'test', source: 'test' } },
+            indexes: {
+              test: { name: 'test', source: 'test' },
+              test_deletion: { name: 'test2', deletion_policy: 'destroy', source: 'test' },
+            },
             roles: { test: { name: 'test', privileges: [] } },
             functions: {
               test: { name: 'test', role: null, body: BaseFQLString },
@@ -408,6 +453,11 @@ describe('DeployCommand', () => {
             {
               name: 'test',
               data: { ...defaultData, deletion_policy: 'retain' },
+              source: [{ collection: q.Collection('test') }],
+            },
+            {
+              name: 'test2',
+              data: { ...defaultData, deletion_policy: 'destroy' },
               source: [{ collection: q.Collection('test') }],
             },
           ],

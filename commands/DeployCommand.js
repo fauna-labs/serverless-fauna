@@ -18,6 +18,14 @@ class DeployCommand {
   }
 
   constructor({ config, faunaClient, logger }) {
+    if (config.deletion_policy !== undefined) {
+      try {
+        this.validateDeletionPolicty(config.deletion_policy)
+      } catch (e) {
+        logger.error(e);
+        throw e;
+      }
+    }
     this.config = config
     this.faunaClient = faunaClient
     this.logger = logger
@@ -87,22 +95,49 @@ class DeployCommand {
     throw new Error([name, error.description].join(' => '))
   }
 
-  mergeMetadata(data = {}) {
-    return { ...this.defaultMetadata, ...data }
+  /// Returns a new object, with the key 'deletion_policy` removed.
+  removeDeletionPolicy(obj) {
+    const { deletion_policy, ...newObj } = obj
+    return newObj
+  }
+  // Throws an error if the given deletion_policy is not "destroy" or "retain".
+  validateDeletionPolicty(deletion_policy) {
+    if (deletion_policy !== undefined && deletion_policy !== "destroy" && deletion_policy !== "retain") {
+      throw new Error(`invalid deletion policty: '${deletion_policy}' (expected 'destroy' or 'retain')`)
+    }
+  }
+
+  mergeMetadata({ data = {}, deletion_policy }) {
+    this.validateDeletionPolicty(deletion_policy)
+    if (deletion_policy === undefined) {
+      return { ...this.defaultMetadata, ...data }
+    } else {
+      return { ...this.defaultMetadata, ...data, deletion_policy }
+    }
   }
 
   collectionAdapter(collection) {
-    return {
-      ...collection,
-      data: this.mergeMetadata(collection.data),
+    try {
+      return {
+        ...this.removeDeletionPolicy(collection),
+        data: this.mergeMetadata({
+          data: collection.data,
+          deletion_policy: collection.deletion_policy,
+        }),
+      }
+    } catch (error) {
+      throw new Error(`collection.${collection.name}: ${error.message}`)
     }
   }
 
   functionAdapter(fn) {
     try {
       return {
-        ...fn,
-        data: this.mergeMetadata(fn.data),
+        ...this.removeDeletionPolicy(fn),
+        data: this.mergeMetadata({
+          data: fn.data,
+          deletion_policy: fn.deletion_policy,
+        }),
         role: fn.role
           ? ['admin', 'server'].includes(fn.role)
             ? fn.role
@@ -118,8 +153,11 @@ class DeployCommand {
   indexAdapter(index) {
     try {
       return {
-        ...index,
-        data: this.mergeMetadata(index.data),
+        ...this.removeDeletionPolicy(index),
+        data: this.mergeMetadata({
+          data: index.data,
+          deletion_policy: index.deletion_policy,
+        }),
         source: (Array.isArray(index.source)
           ? index.source
           : [index.source]
@@ -206,8 +244,11 @@ class DeployCommand {
   roleAdapter({ privileges, membership, ...role }) {
     try {
       const adaptedRole = {
-        ...role,
-        data: this.mergeMetadata(role.data),
+        ...this.removeDeletionPolicy(role),
+        data: this.mergeMetadata({
+          data: role.data,
+          deletion_policy: role.deletion_policy,
+        }),
       }
 
       if (membership) {
