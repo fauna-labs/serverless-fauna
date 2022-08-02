@@ -1,70 +1,70 @@
 const sourceObjProp = {
-  type: 'object',
-  required: ['collection'],
+  type: "object",
+  required: ["collection"],
   additionalProperties: false,
   properties: {
-    collection: { type: 'string' },
+    collection: { type: "string" },
     fields: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': { type: 'string' },
+        ".*": { type: "string" },
       },
     },
   },
-}
+};
 
 const termsProp = {
-  type: 'object',
+  type: "object",
   properties: {
-    fields: { type: 'array', items: { type: 'string' } },
-    bindings: { type: 'array', items: { type: 'string' } },
+    fields: { type: "array", items: { type: "string" } },
+    bindings: { type: "array", items: { type: "string" } },
   },
-  oneOf: [{ required: ['fields'] }, { required: ['bindings'] }],
+  oneOf: [{ required: ["fields"] }, { required: ["bindings"] }],
   additionalProperties: false,
-}
+};
 
 const valueFieldProp = {
-  type: 'object',
+  type: "object",
   properties: {
-    path: { type: 'string' },
-    reverse: { type: 'boolean' },
+    path: { type: "string" },
+    reverse: { type: "boolean" },
   },
-  required: ['path'],
+  required: ["path"],
   additionalProperties: false,
-}
+};
 
 const valuesProp = {
-  type: 'object',
+  type: "object",
   properties: {
     fields: {
-      type: 'array',
+      type: "array",
       items: {
-        oneOf: [{ type: 'string' }, valueFieldProp],
+        oneOf: [{ type: "string" }, valueFieldProp],
       },
     },
-    bindings: { type: 'array', items: { type: 'string' } },
+    bindings: { type: "array", items: { type: "string" } },
   },
   additionalProperties: false,
-}
+};
 
 module.exports = {
-  required: ['name', 'source'],
+  required: ["name", "source"],
   additionalProperties: false,
-  type: 'object',
+  type: "object",
   properties: {
-    name: { type: 'string' },
-    active: { type: 'boolean' },
+    name: { type: "string" },
+    active: { type: "boolean" },
     source: {
       oneOf: [
-        { type: 'string' },
-        { type: 'array', items: sourceObjProp },
+        { type: "string" },
+        { type: "array", items: sourceObjProp },
         sourceObjProp,
       ],
     },
-    unique: { type: 'boolean' },
-    serialized: { type: 'boolean' },
+    unique: { type: "boolean" },
+    serialized: { type: "boolean" },
     terms: termsProp,
     values: valuesProp,
-    data: { type: 'object' },
+    data: { type: "object" },
   },
-}
+};

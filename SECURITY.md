@@ -5,10 +5,10 @@
 The following versions of this software currently receive support for
 security vulnerabilities:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| <SEMVER>| :white_check_mark: |
-| <SEMVER>| :x:                |
+| Version  | Supported          |
+| -------- | ------------------ |
+| <SEMVER> | :white_check_mark: |
+| <SEMVER> | :x:                |
 
 End of life (EOL) dates for security support will be posted here.
 

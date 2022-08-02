@@ -1,42 +1,42 @@
-const { query: q } = require('faunadb')
+const { query: q } = require("faunadb");
 
 const GetObjectFields = (obj) =>
-  q.Map(q.ToArray(obj), (el) => q.Select([0], el))
+  q.Map(q.ToArray(obj), (el) => q.Select([0], el));
 
 /**
  * Extract values from object by keys.
  * If obj doesn't have field, handle it gracefully and doesn't return it value
  */
 const ExtractValues = ({ obj, fields }) =>
-  q.ToObject(q.Map(fields, (ro) => [ro, q.Select([ro], obj, null)]))
+  q.ToObject(q.Map(fields, (ro) => [ro, q.Select([ro], obj, null)]));
 
 const ReplaceObject = ({ newData = {}, currentData }) => {
   return q.Merge(
     q.ToObject(
       q.Map(
         GetObjectFields(currentData),
-        q.Lambda('field', [q.Var('field'), null])
+        q.Lambda("field", [q.Var("field"), null])
       )
     ),
     newData
-  )
-}
+  );
+};
 
 const GetAllResourcesRefs = () =>
   q.Let(
     {
-      collections: q.Select(['data'], q.Paginate(q.Collections()), {}),
-      indexes: q.Select(['data'], q.Paginate(q.Indexes()), {}),
-      functions: q.Select(['data'], q.Paginate(q.Functions()), {}),
-      roles: q.Select(['data'], q.Paginate(q.Roles()), {}),
+      collections: q.Select(["data"], q.Paginate(q.Collections()), {}),
+      indexes: q.Select(["data"], q.Paginate(q.Indexes()), {}),
+      functions: q.Select(["data"], q.Paginate(q.Functions()), {}),
+      roles: q.Select(["data"], q.Paginate(q.Roles()), {}),
     },
     q.Union(
-      q.Var('indexes'),
-      q.Var('collections'),
-      q.Var('functions'),
-      q.Var('roles')
+      q.Var("indexes"),
+      q.Var("collections"),
+      q.Var("functions"),
+      q.Var("roles")
     )
-  )
+  );
 
 const FilterServerlessResourceWithDestroyPolicy = ({
   resources,
@@ -44,15 +44,15 @@ const FilterServerlessResourceWithDestroyPolicy = ({
 }) => {
   return q.Filter(resources, (resource) =>
     q.And([
-      q.Select(['data', 'created_by_serverless_plugin'], resource, false),
+      q.Select(["data", "created_by_serverless_plugin"], resource, false),
       q.Equals(
-        q.Select(['data', 'deletion_policy'], resource, 'destroy'),
-        'destroy'
+        q.Select(["data", "deletion_policy"], resource, "destroy"),
+        "destroy"
       ),
       CustomFilter ? CustomFilter(resource) : true,
     ])
-  )
-}
+  );
+};
 
 const ResourceMap = {
   collection: q.Collection,
@@ -64,7 +64,7 @@ const ResourceMap = {
   roles: q.Roles,
   functions: q.Functions,
   keys: q.Keys,
-}
+};
 
 module.exports = {
   FilterServerlessResourceWithDestroyPolicy,
@@ -73,4 +73,4 @@ module.exports = {
   ReplaceObject,
   ResourceMap,
   GetAllResourcesRefs,
-}
+};

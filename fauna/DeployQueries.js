@@ -1,10 +1,10 @@
-const { query: q, Expr } = require('faunadb')
+const { query: q, Expr } = require("faunadb");
 const {
   GetObjectFields,
   ExtractValues,
   ReplaceObject,
   FilterServerlessResourceWithDestroyPolicy,
-} = require('./utility')
+} = require("./utility");
 
 module.exports = ({
   collections = [],
@@ -13,19 +13,19 @@ module.exports = ({
   roles = [],
 }) => {
   const queries = [
-    ...prepareQueries({ resources: collections, type: 'collection' }),
-    ...prepareQueries({ resources: indexes, type: 'index' }),
+    ...prepareQueries({ resources: collections, type: "collection" }),
+    ...prepareQueries({ resources: indexes, type: "index" }),
     ...prepareUpsert({
       resources: roles.createWithoutPrivileges,
-      type: 'role',
+      type: "role",
       remapDataForCreate: (role) => ({ ...role, privileges: [] }),
     }),
-    ...prepareQueries({ resources: functions, type: 'function' }),
-    ...prepareQueries({ resources: roles.update, type: 'role' }),
-  ]
+    ...prepareQueries({ resources: functions, type: "function" }),
+    ...prepareQueries({ resources: roles.update, type: "role" }),
+  ];
 
-  return queries.filter((q) => !!q)
-}
+  return queries.filter((q) => !!q);
+};
 
 /**
  * Delete resources that not specified at configuration (unless resource has deletion_policy: retain)
@@ -39,40 +39,40 @@ const DeleteResourcesIfNotInConfiguration = ({
     {
       deletedResource: q.Map(
         FilterResourceToBeDeleted({ ResourceList, resources }),
-        q.Lambda('resource', q.Delete(q.Select(['ref'], q.Var('resource'))))
+        q.Lambda("resource", q.Delete(q.Select(["ref"], q.Var("resource"))))
       ),
       resourceNames: q.Concat(
         q.Map(
           q.Filter(
-            q.Var('deletedResource'),
-            q.Lambda('resource', q.IsObject(q.Var('resource')))
+            q.Var("deletedResource"),
+            q.Lambda("resource", q.IsObject(q.Var("resource")))
           ),
-          q.Lambda('resource', q.Select(['name'], q.Var('resource')))
+          q.Lambda("resource", q.Select(["name"], q.Var("resource")))
         ),
-        ', '
+        ", "
       ),
     },
     q.If(
-      q.GT(q.Count(q.Var('deletedResource')), 0),
-      q.Format('%s %s was deleted', label, q.Var('resourceNames')),
+      q.GT(q.Count(q.Var("deletedResource")), 0),
+      q.Format("%s %s was deleted", label, q.Var("resourceNames")),
       null
     )
-  )
-}
+  );
+};
 
 const FilterResourceToBeDeleted = ({ ResourceList, resources }) => {
   return FilterServerlessResourceWithDestroyPolicy({
     resources: q.Map(
-      q.Select(['data'], q.Paginate(ResourceList()), {}),
+      q.Select(["data"], q.Paginate(ResourceList()), {}),
       (ref) => q.Get(ref)
     ),
     CustomFilter: (resource) =>
       q.Equals(
-        q.Count(q.Intersection([[q.Select(['ref'], resource)], resources])),
+        q.Count(q.Intersection([[q.Select(["ref"], resource)], resources])),
         0
       ),
-  })
-}
+  });
+};
 
 const UpsertResource = ({
   label,
@@ -82,14 +82,14 @@ const UpsertResource = ({
   UpdateQuery,
   remapDataForCreate,
 }) => {
-  const data = remapDataForCreate ? remapDataForCreate(resource) : resource
+  const data = remapDataForCreate ? remapDataForCreate(resource) : resource;
 
   return q.Let(
     {
-      name: q.Select(['name'], resource),
+      name: q.Select(["name"], resource),
       isExists: q.Exists(ref),
       res: q.If(
-        q.Var('isExists'),
+        q.Var("isExists"),
         UpdateIfChanged({
           ref,
           resource,
@@ -100,11 +100,11 @@ const UpsertResource = ({
     },
     LogResult({
       label,
-      res: q.Var('res'),
-      isExists: q.Var('isExists'),
+      res: q.Var("res"),
+      isExists: q.Var("isExists"),
     })
-  )
-}
+  );
+};
 
 /**
  * Execute UpdateFql only if obj values not the same as at the db
@@ -114,10 +114,10 @@ const UpdateIfChanged = ({ ref, resource, UpdateFql }) =>
     {
       fields: GetObjectFields(resource),
       db: q.Get(ref),
-      compareObj: ExtractValues({ obj: q.Var('db'), fields: q.Var('fields') }),
+      compareObj: ExtractValues({ obj: q.Var("db"), fields: q.Var("fields") }),
     },
-    q.If(q.Equals([q.Var('compareObj'), resource]), '', UpdateFql)
-  )
+    q.If(q.Equals([q.Var("compareObj"), resource]), "", UpdateFql)
+  );
 
 /**
  * Checks if readonly fields not modified and update all the rest
@@ -135,13 +135,13 @@ const SafeUpdateWithReadonly = ({ ref, readonly, resource }) => {
       ),
       updateReadonlyFields: ExtractValues({
         obj: resource,
-        fields: q.Var('updateReadonlyFieldsNames'),
+        fields: q.Var("updateReadonlyFieldsNames"),
       }),
 
       // prepare object to compare db values with update object values
       dbReadonlyFields: ExtractValues({
-        obj: q.Var('db'),
-        fields: q.Var('updateReadonlyFieldsNames'),
+        obj: q.Var("db"),
+        fields: q.Var("updateReadonlyFieldsNames"),
       }),
 
       // prepare secure update object (excluding readonly fields)
@@ -151,14 +151,14 @@ const SafeUpdateWithReadonly = ({ ref, readonly, resource }) => {
         readonly,
       ]),
       secureUpdateFields: q.ToObject(
-        q.Map(q.Var('secureUpdateFieldsNames'), (key) => [
+        q.Map(q.Var("secureUpdateFieldsNames"), (key) => [
           key,
           q.Select([key], resource),
         ])
       ),
     },
     q.If(
-      q.Equals(q.Var('dbReadonlyFields'), q.Var('updateReadonlyFields')),
+      q.Equals(q.Var("dbReadonlyFields"), q.Var("updateReadonlyFields")),
       // Update query will merge existing `data` with provided. However, when user remove
       // some fields from `data` config, he would expect that those fields would be removed from db
       // Replace query has a bug when trying to replace index.
@@ -167,29 +167,29 @@ const SafeUpdateWithReadonly = ({ ref, readonly, resource }) => {
       // and then merge with `data` from config
       q.Update(
         ref,
-        q.Merge(q.Var('secureUpdateFields'), {
+        q.Merge(q.Var("secureUpdateFields"), {
           data: ReplaceObject({
             newData: resource.data,
-            currentData: q.Select(['data'], q.Var('db'), {}),
+            currentData: q.Select(["data"], q.Var("db"), {}),
           }),
         })
       ),
-      q.Abort(q.Format('Field %s are readonly', q.Concat(readonly, ',')))
+      q.Abort(q.Format("Field %s are readonly", q.Concat(readonly, ",")))
     )
-  )
-}
+  );
+};
 
 const LogResult = ({ res, isExists, label }) =>
   q.If(
     q.IsObject(res),
     q.Format(
-      '%s `%s` was %s',
+      "%s `%s` was %s",
       label,
-      q.Select(['name'], res),
-      q.If(isExists, 'updated', 'created')
+      q.Select(["name"], res),
+      q.If(isExists, "updated", "created")
     ),
     null
-  )
+  );
 
 const ParamsMapByResourceType = {
   index: {
@@ -200,7 +200,7 @@ const ParamsMapByResourceType = {
       SafeUpdateWithReadonly({
         ref,
         resource,
-        readonly: ['source', 'terms', 'values'],
+        readonly: ["source", "terms", "values"],
       }),
   },
   function: {
@@ -214,9 +214,9 @@ const ParamsMapByResourceType = {
     CreateQuery: q.CreateCollection,
   },
   role: { Ref: q.Role, ResourceList: q.Roles, CreateQuery: q.CreateRole },
-}
+};
 const prepareQueries = ({ resources, type, remapDataForCreate }) => {
-  const params = ParamsMapByResourceType[type]
+  const params = ParamsMapByResourceType[type];
 
   return [
     ...prepareUpsert({ resources, type, remapDataForCreate, log: true }),
@@ -229,11 +229,11 @@ const prepareQueries = ({ resources, type, remapDataForCreate }) => {
         label: type,
       }),
     },
-  ]
-}
+  ];
+};
 
 const prepareUpsert = ({ resources, type, remapDataForCreate, log }) => {
-  const params = ParamsMapByResourceType[type]
+  const params = ParamsMapByResourceType[type];
 
   return resources.map((resource) => ({
     name: `upsert.${type}.${resource.name}`,
@@ -246,5 +246,5 @@ const prepareUpsert = ({ resources, type, remapDataForCreate, log }) => {
       UpdateQuery: params.UpdateQuery || q.Replace,
       remapDataForCreate,
     }),
-  }))
-}
+  }));
+};

@@ -1,11 +1,11 @@
 module.exports = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
-  required: ['secret'],
+  required: ["secret"],
   properties: {
-    secret: { type: 'string' },
-    domain: { type: 'string' },
-    scheme: { type: 'string' },
-    port: { type: 'number' },
+    secret: { type: "string" },
+    domain: { type: "string" },
+    scheme: { type: "string" },
+    port: { type: "number" },
   },
-}
+};
