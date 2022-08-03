@@ -66,7 +66,7 @@ describe('Fauna deploy', () => {
         config: configForDeploy,
       })
 
-      expect(isSchemaUpdated, 'schema updated').toBeTruthy()
+      expect(isSchemaUpdated).toBeTruthy()
 
       const { collections, indexes, functions, roles } = await testClient.query(
         q.Let(
@@ -84,7 +84,7 @@ describe('Fauna deploy', () => {
 
       const omitDynamicFields = ({ ts, ref, ...rest }) => rest
 
-      expect(collections.data.map(omitDynamicFields), 'collections').toEqual([
+      expect(collections.data.map(omitDynamicFields)).toEqual([
         {
           history_days: 30,
           name: 'users',
@@ -100,7 +100,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(indexes.data.map(omitDynamicFields), 'indexes').toEqual([
+      expect(indexes.data.map(omitDynamicFields)).toEqual([
         {
           active: true,
           serialized: true,
@@ -123,7 +123,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(functions.data.map(omitDynamicFields), 'functions').toEqual([
+      expect(functions.data.map(omitDynamicFields)).toEqual([
         {
           name: 'register',
           data: defaultData,
@@ -140,7 +140,7 @@ describe('Fauna deploy', () => {
         },
       ])
 
-      expect(roles.data.map(omitDynamicFields), 'roles').toEqual([
+      expect(roles.data.map(omitDynamicFields)).toEqual([
         {
           name: 'test_circular_dependency',
           data: defaultData,

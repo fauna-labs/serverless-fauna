@@ -71,166 +71,143 @@ describe('DeployCommand', () => {
 
     describe('IndexAdapter', () => {
       test('source', () => {
-        const cases = [
+        const check = (input, output) => expect(command.indexAdapter(input)).toEqual(output);
+        check(
+          { name: 'name', source: 'source' },
           {
-            label: 'plain string',
-            input: { name: 'name', source: 'source' },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-            },
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+          }
+        );
+        check(
+          { name: 'name', source: ['source', 'source2'] },
+          {
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [
+              {
+                collection: q.Collection('source'),
+              },
+              {
+                collection: q.Collection('source2'),
+              },
+            ],
+          }
+        );
+        check(
+          {
+            name: 'name',
+            source: { collection: 'source', fields: { bind: BaseFQLString } },
           },
           {
-            label: 'array of strings',
-            input: { name: 'name', source: ['source', 'source2'] },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [
-                {
-                  collection: q.Collection('source'),
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [
+              {
+                collection: q.Collection('source'),
+                fields: {
+                  bind: q.Query(BaseFQL),
                 },
-                {
-                  collection: q.Collection('source2'),
-                },
-              ],
-            },
-          },
-          {
-            label: 'source object',
-            input: {
-              name: 'name',
-              source: { collection: 'source', fields: { bind: BaseFQLString } },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [
-                {
-                  collection: q.Collection('source'),
-                  fields: {
-                    bind: q.Query(BaseFQL),
-                  },
-                },
-              ],
-            },
-          },
-        ]
-
-        for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
-        }
+              },
+            ],
+          }
+        );
       })
 
       test('terms', () => {
-        const cases = [
+        const check = (input, output) => expect(command.indexAdapter(input)).toEqual(output);
+        check(
           {
-            label: 'only fields',
-            input: {
-              name: 'name',
-              source: 'source',
-              terms: { fields: ['data.field1', 'data.field2'] },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-              terms: [
-                { field: ['data', 'field1'] },
-                { field: ['data', 'field2'] },
-              ],
+            name: 'name',
+            source: 'source',
+            terms: { fields: ['data.field1', 'data.field2'] },
+          },
+          {
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+            terms: [
+              { field: ['data', 'field1'] },
+              { field: ['data', 'field2'] },
+            ],
+          },
+        );
+        check(
+          {
+            name: 'name',
+            source: 'source',
+            terms: {
+              fields: ['data.field1', 'data.field2'],
+              bindings: ['bind'],
             },
           },
           {
-            label: 'with binding',
-            input: {
-              name: 'name',
-              source: 'source',
-              terms: {
-                fields: ['data.field1', 'data.field2'],
-                bindings: ['bind'],
-              },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-              terms: [
-                { field: ['data', 'field1'] },
-                { field: ['data', 'field2'] },
-                { binding: 'bind' },
-              ],
-            },
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+            terms: [
+              { field: ['data', 'field1'] },
+              { field: ['data', 'field2'] },
+              { binding: 'bind' },
+            ],
           },
-        ]
-
-        for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
-        }
+        );
       })
 
       test('values', () => {
-        const cases = [
+        const check = (input, output) => expect(command.indexAdapter(input)).toEqual(output);
+        check(
           {
-            label: 'only fields',
-            input: {
-              name: 'name',
-              source: 'source',
-              values: { fields: ['data.field1', 'data.field2'] },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-              values: [
-                { field: ['data', 'field1'] },
-                { field: ['data', 'field2'] },
-              ],
+            name: 'name',
+            source: 'source',
+            values: { fields: ['data.field1', 'data.field2'] },
+          },
+          {
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+            values: [
+              { field: ['data', 'field1'] },
+              { field: ['data', 'field2'] },
+            ],
+          },
+        );
+        check(
+          {
+            name: 'name',
+            source: 'source',
+            values: {
+              fields: ['data.field1', 'data.field2'],
+              bindings: ['bind'],
             },
           },
           {
-            label: 'with binding',
-            input: {
-              name: 'name',
-              source: 'source',
-              values: {
-                fields: ['data.field1', 'data.field2'],
-                bindings: ['bind'],
-              },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-              values: [
-                { field: ['data', 'field1'] },
-                { field: ['data', 'field2'] },
-                { binding: 'bind' },
-              ],
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+            values: [
+              { field: ['data', 'field1'] },
+              { field: ['data', 'field2'] },
+              { binding: 'bind' },
+            ],
+          },
+        );
+        check(
+          {
+            name: 'name',
+            source: 'source',
+            values: {
+              fields: [{ path: 'data.field1', reverse: true }],
             },
           },
           {
-            label: 'with reverse',
-            input: {
-              name: 'name',
-              source: 'source',
-              values: {
-                fields: [{ path: 'data.field1', reverse: true }],
-              },
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              source: [{ collection: q.Collection('source') }],
-              values: [{ field: ['data', 'field1'], reverse: true }],
-            },
+            name: 'name',
+            data: command.defaultMetadata,
+            source: [{ collection: q.Collection('source') }],
+            values: [{ field: ['data', 'field1'], reverse: true }],
           },
-        ]
-
-        for (let { label, input, output } of cases) {
-          expect(command.indexAdapter(input), label).toEqual(output)
-        }
+        );
       })
     })
 
@@ -291,63 +268,55 @@ describe('DeployCommand', () => {
       })
 
       test('membership', () => {
-        const cases = [
+        const check = (input, output) => expect(command.roleAdapter(input)).toEqual(output);
+        check(
           {
-            label: 'plain string',
-            input: {
-              name: 'name',
-              membership: 'membership',
-              privileges: [
-                { collection: 'collection', actions: { read: true } },
-              ],
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              privileges: [
-                {
-                  resource: q.Collection('collection'),
-                  actions: { read: true },
-                },
-              ],
-              membership: [{ resource: q.Collection('membership') }],
-            },
+            name: 'name',
+            membership: 'membership',
+            privileges: [
+              { collection: 'collection', actions: { read: true } },
+            ],
           },
-
           {
-            label: 'membership object',
-            input: {
-              name: 'name',
-              membership: {
-                resource: 'membership',
-                predicate: BaseFQLString,
+            name: 'name',
+            data: command.defaultMetadata,
+            privileges: [
+              {
+                resource: q.Collection('collection'),
+                actions: { read: true },
               },
-              privileges: [
-                { collection: 'collection', actions: { read: true } },
-              ],
-            },
-            output: {
-              name: 'name',
-              data: command.defaultMetadata,
-              privileges: [
-                {
-                  resource: q.Collection('collection'),
-                  actions: { read: true },
-                },
-              ],
-              membership: [
-                {
-                  resource: q.Collection('membership'),
-                  predicate: q.Query(BaseFQL),
-                },
-              ],
-            },
+            ],
+            membership: [{ resource: q.Collection('membership') }],
           },
-        ]
-
-        for (let { label, input, output } of cases) {
-          expect(command.roleAdapter(input), label).toEqual(output)
-        }
+        );
+        check(
+          {
+            name: 'name',
+            membership: {
+              resource: 'membership',
+              predicate: BaseFQLString,
+            },
+            privileges: [
+              { collection: 'collection', actions: { read: true } },
+            ],
+          },
+          {
+            name: 'name',
+            data: command.defaultMetadata,
+            privileges: [
+              {
+                resource: q.Collection('collection'),
+                actions: { read: true },
+              },
+            ],
+            membership: [
+              {
+                resource: q.Collection('membership'),
+                predicate: q.Query(BaseFQL),
+              },
+            ],
+          },
+        );
       })
 
       test('splitAndAdaptRoles', () => {

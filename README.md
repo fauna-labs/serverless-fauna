@@ -332,6 +332,14 @@ collections:
     deletion_policy: destroy
 ```
 
+# Developers
+To develop on this repository, clone it and make any changes you would like to issue in a pull request.
+
+You can run the test suite by:
+
+1. Starting a local fauna container with `docker run --rm --name faunadb-sls-test -p 8443:8443 fauna/faunadb`
+2. Running the test suite with `npm test`
+
 ---
 
 Copyright Fauna, Inc. or its affiliates. All rights reserved. SPDX-License-Identifier: MIT-0
