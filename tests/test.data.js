@@ -1,6 +1,11 @@
 const { query: q } = require('faunadb')
 
-const BaseFQL = q.Lambda('ref', [ q.Var('ref'), "this/is/not/a/comment" ])
+const BaseFQL = q.Lambda('ref', [
+  q.Var('ref'),
+  "this/is/not/a/comment",
+  "//this is also not a comment"
+])
+
 const BaseFQLString = `
 /*
  * Leading comment block
@@ -10,7 +15,8 @@ Lambda(
   // Comment
   [
     Var("ref" /* Inline comment */),
-    "this/is/not/a/comment"
+    "this/is/not/a/comment",
+    "//this is also not a comment"
   ]
 )
 `
