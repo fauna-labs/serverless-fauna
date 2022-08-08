@@ -28,7 +28,7 @@ describe('Fauna deploy', () => {
   let dbRef
   const BaseFQLValue = new values.Query({
     lambda: 'ref',
-    expr: [ { var: 'ref' }, "this/is/not/a/comment" ],
+    expr: [{ var: 'ref' }, "this/is/not/a/comment", "//this is also not a comment"],
     api_version: '4',
   })
 
@@ -207,11 +207,11 @@ describe('Fauna deploy', () => {
         functions: configForDeploy.functions.map((fn) =>
           fn.name === 'register'
             ? {
-                name: 'register',
-                body: q.Query(q.Lambda('ref', q.Sum([q.Var('ref'), 1]))),
-                role: 'admin',
-                data: { update: 'test' },
-              }
+              name: 'register',
+              body: q.Query(q.Lambda('ref', q.Sum([q.Var('ref'), 1]))),
+              role: 'admin',
+              data: { update: 'test' },
+            }
             : fn
         ),
       }
