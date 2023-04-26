@@ -7,7 +7,7 @@ class DeployCommand {
   command = {
     deploy: {
       usage:
-        'deploy fauna schema. the same logic executed for `sls deploy` command',
+        'Deploy Fauna schema. The same logic executed for `sls deploy` command',
       lifecycleEvents: ['deploy'],
     },
   }
@@ -23,7 +23,8 @@ class DeployCommand {
     this.logger = logger
     this.defaultMetadata = {
       created_by_serverless_plugin: true,
-      deletion_policy: config.deletion_policy || 'destroy',
+      fauna_api_version: "4",
+      deletion_policy: config?.deletion_policy || 'destroy',
     }
   }
 

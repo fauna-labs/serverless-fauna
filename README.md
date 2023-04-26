@@ -38,10 +38,10 @@ $ yarn add @fauna-labs/serverless-fauna
 ## Commands 
 This plugin listens to hooks from default serverless commands, and runs its own logic:
 
-| command | description |
-| --- | --- |
-| serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
-| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy) |
+| command | description                                                                                                                                                                                  |
+| --- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` and `fauna_api_version` set to a string value |
+| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                                                                                   |
 
 If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `serverless fauna deploy`)
 

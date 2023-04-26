@@ -5,39 +5,65 @@ const RemoveCommand = require('./commands/RemoveCommand')
 const faunaSchemaProperties = require('./schemaProps/fauna')
 const getClient = require('./fauna/client')
 
+const fqlxSchemaProperties = require('./fqlx/schema/fauna')
+const getFQLXClient = require('./fqlx/client')
+const FQLXDeployCommand = require('./commands/FQLXDeployCommand')
+
 class ServerlessFaunaPlugin {
   constructor(serverless, options) {
     this.serverless = serverless
-    this.config = this.serverless.service.initialServerlessConfig.fauna
+    this.config = this.serverless.service.initialServerlessConfig
     this.options = options
     this.logger = new Logger(serverless.cli)
-    this.faunaClient = getClient(this.config.client)
+    this.hooks = {}
+
+    this.commands = {
+      fauna: {
+        commands: {},
+        options: {},
+      },
+      fqlx: {
+        commands: {},
+        options: {}
+      }
+    }
+
+    this.initV10()
+    this.initV4()
+  }
+
+  initV10() {
+    this.serverless.configSchemaHandler.defineTopLevelProperty(
+      'fqlx',
+      fqlxSchemaProperties
+    )
+
+    const client = this.config.fqlx !== undefined ? getFQLXClient(this.config.fqlx.client) : null
+    const cmdList = [FQLXDeployCommand]
+    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fqlx"))
+  }
+
+  initV4() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
       'fauna',
       faunaSchemaProperties
     )
-    this.commands = {
-      fauna: {
-        commands: {},
-      },
-    }
-
-    this.hooks = {}
 
     const cmdList = [DeployCommand, RemoveCommand]
-    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls))
+    const client = this.config.fauna !== undefined ? getClient(this.config.fauna.client) : null
+    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fauna"))
   }
 
-  registerCommand(CmdCls) {
+  registerCommand(CmdCls, client, namespace) {
     const cmd = new CmdCls({
-      faunaClient: this.faunaClient,
+      faunaClient: client,
       serverless: this.serverless,
-      config: this.config,
+      config: this.config[namespace],
       options: this.options,
       logger: this.logger,
     })
     Object.assign(this.hooks, cmd.hooks)
-    Object.assign(this.commands.fauna.commands, cmd.command)
+    Object.assign(this.commands[namespace].commands, cmd.command)
   }
 }
 
