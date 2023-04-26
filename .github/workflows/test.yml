@@ -1,0 +1,33 @@
+name: Serverless Fauna Tests
+on:
+  pull_request:
+    paths:
+      - "**"
+
+defaults:
+  run:
+    working-directory: ./
+
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      fauna:
+        image: fauna/faunadb:latest
+        ports:
+          - 8443:8443
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up
+        uses: actions/setup-node@v3
+        with:
+          node-version: ">=18.x"
+
+      - name: Install
+        run: |
+          npm install
+
+      - name: Test
+        run: npm test
