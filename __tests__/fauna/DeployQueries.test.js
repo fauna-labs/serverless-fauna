@@ -86,7 +86,7 @@ describe('Fauna deploy', () => {
 
       expect(collections.data.map(omitDynamicFields)).toEqual([
         {
-          history_days: 30,
+          history_days: 0,
           name: 'users',
           data: {
             ...defaultData,
@@ -94,7 +94,7 @@ describe('Fauna deploy', () => {
           },
         },
         {
-          history_days: 30,
+          history_days: 0,
           name: 'logs',
           data: defaultData,
         },
