@@ -22,8 +22,7 @@ class DeployCommand {
     this.faunaClient = faunaClient
     this.logger = logger
     this.defaultMetadata = {
-      created_by_serverless_plugin: true,
-      fauna_api_version: "4",
+      created_by_serverless_plugin: "fauna:v4",
       deletion_policy: config?.deletion_policy || 'destroy',
     }
   }

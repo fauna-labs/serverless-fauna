@@ -11,7 +11,6 @@ class FQLXDeployCommand {
   }
 
   hooks = {
-    'deploy:deploy': this.deploy.bind(this),
     'fqlx:deploy:deploy': this.deploy.bind(this),
   }
 
@@ -20,8 +19,7 @@ class FQLXDeployCommand {
     this.client = faunaClient
     this.logger = logger
     this.defaultMetadata = {
-      created_by_serverless_plugin: true,
-      fauna_api_version: "10",
+      created_by_serverless_plugin: "fauna:v10",
       deletion_policy: config?.deletion_policy || 'destroy',
     }
   }
@@ -35,7 +33,7 @@ class FQLXDeployCommand {
       functions = {},
     } = this.config
     try {
-      this.logger.info('Schema updating in process...')
+      this.logger.info('FQL X Schema updating in process...')
 
       const q = queryBuilder({
         functions: Object.values(functions).map(
@@ -49,11 +47,7 @@ class FQLXDeployCommand {
 
       res.data.forEach(d => {
         const log = `${d.type}: ${d.name} was ${d.result}`
-        if (["created", "updated"].includes(d.result)) {
-          this.logger.info(log)
-        } else {
-          this.logger.success(log)
-        }
+        this.logger.success(log)
       })
 
     } catch (e) {
