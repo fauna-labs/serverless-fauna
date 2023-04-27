@@ -1,5 +1,4 @@
 const { fql } = require('fauna')
-const { and } = require('./utils')
 
 /**
  * Creates or updates a function according to the passed parameters.
@@ -9,17 +8,17 @@ const { and } = require('./utils')
  */
 const createUpdateFunction = (params) => {
   return fql`
-  let results = if (Function.byName(${params.name}) != null) {
+  if (Function.byName(${params.name}) != null) {
     let f = Function.byName(${params.name})
-    if (${and("f", params)}) {
-      results.append({ type: "function", name: ${params.name}, result: "not changed" })
+    if (Object.entries(${params}).every(v => v[1] == f[v[0]])) {
+      { type: "function", name: ${params.name}, result: "not changed" }
     } else {
       f.update(${params})
-      results.append({ type: "function", name: ${params.name}, result: "updated" })
+      { type: "function", name: ${params.name}, result: "updated" }
     }
   } else {
     Function.create(${params})
-    results.append({ type: "function", name: ${params.name}, result: "created" })
+    { type: "function", name: ${params.name}, result: "created" }
   }`
 }
 

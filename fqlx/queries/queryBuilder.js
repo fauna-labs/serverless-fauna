@@ -8,11 +8,5 @@ module.exports = ({
     ...functions.map(f => createUpdateFunction(f)),
   ]
 
-  const reduced = queries
-    .filter((q) => !!q)
-    .reduce((res, curr) => {
-      return fql`${res}\n\n${curr}`
-    }, fql`let results = []`)
-
-  return fql`${reduced}\n\nresults`
+  return fql`${queries}`
 }
