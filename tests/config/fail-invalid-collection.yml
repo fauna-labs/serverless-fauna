@@ -1,0 +1,19 @@
+provider:
+  name: "aws"
+plugins:
+  # - "@fauna-labs/serverless-fauna"
+  - "../../"
+service: "foo"
+fauna:
+  client:
+    secret: secret
+    domain: localhost
+    port: 9001
+    scheme: http
+  collections:
+    movies_1:
+      name: movies_1
+  indexes:
+    movies_ts_1:
+      name: movies_ts_1
+      source: movies_1 but oh look i typoed right here so this is going to fail

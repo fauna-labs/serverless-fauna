@@ -71,6 +71,7 @@ class DeployCommand {
       }
     } catch (error) {
       this.logger.error(error)
+      throw error;
     }
   }
 
