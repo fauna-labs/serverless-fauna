@@ -1,4 +1,5 @@
-const queryBuilder = require('../fqlx/queries/queryBuilder')
+const deployQuery = require('../fqlx/queries/deploy')
+const removeQuery = require('../fqlx/queries/remove')
 const {ServiceError} = require("fauna");
 
 class FQLXDeployCommand {
@@ -28,28 +29,9 @@ class FQLXDeployCommand {
     return { ...this.defaultMetadata, ...data }
   }
 
-  async deploy() {
-    const {
-      functions = {},
-    } = this.config
+  async tryLog(fn) {
     try {
-      this.logger.info('FQL X Schema updating in process...')
-
-      const q = queryBuilder({
-        functions: Object.values(functions).map(
-          f => {
-            return {...f, data: this.mergeMetadata(f.data)}
-          }
-        ),
-      })
-
-      const res = await this.client.query(q)
-
-      res.data.forEach(d => {
-        const log = `${d.type}: ${d.name} was ${d.result}`
-        this.logger.success(log)
-      })
-
+      await fn()
     } catch (e) {
       if (e instanceof ServiceError) {
         this.logger.error(
@@ -58,6 +40,78 @@ class FQLXDeployCommand {
       } else {
         this.logger.error(e)
       }
+    }
+  }
+
+  async deploy() {
+    const {
+      functions = {},
+    } = this.config
+
+    await this.tryLog(async () => {
+      this.logger.info('FQL X schema create/update transaction in progress...')
+
+      const q = deployQuery(this.adapt({functions}))
+      const res = await this.client.query(q)
+
+      res.data.forEach(d => {
+        if (d.result !== "noop") {
+          const log = `${d.type}: ${d.resources} ${d.result}`
+          this.logger.success(log)
+        }
+      })
+
+      await this.remove(true)
+    })
+  }
+
+  async remove(withDeploy = false) {
+    let {
+      functions = {},
+    } = this.config
+
+    if (!withDeploy) {
+      functions = {}
+    }
+
+    const log = (d) => {
+      if (d.resources.data?.length !== 0) {
+        const log = `${d.type}: ${d.resources.data?.map(d => d.ref?.name ?? "unknown")} ${d.result}`
+        this.logger.error(log)
+      }
+    }
+
+    const paginate = async (data) => {
+      let a = data.after
+      while (a != null) {
+        const res = await this.client.query(`Set.paginate(${data.after})`)
+        log(res.data)
+        a = res.data.after
+      }
+    }
+
+    await this.tryLog(async () => {
+      this.logger.info('FQL X schema remove transaction in progress...')
+
+      const q = removeQuery(this.adapt({functions}))
+      const res = await this.client.query(q)
+
+      for (const d of res.data) {
+        log(d)
+        if (d.data?.after != null) {
+          await paginate(d.data)
+        }
+      }
+    })
+  }
+
+  adapt({ functions = {} }) {
+    return {
+      functions: Object.entries(functions).map(
+        ([k, v]) => {
+          return { name: k, ...v, data: this.mergeMetadata(v.data)}
+        }
+      )
     }
   }
 }

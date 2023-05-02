@@ -8,5 +8,12 @@ module.exports = ({
     ...functions.map(f => createUpdateFunction(f)),
   ]
 
-  return fql`${queries}`
+  const result =queries.reduce((prev, curr) => {
+    if (prev === null) {
+      return fql`[${curr}`
+    }
+    return fql`${prev}, ${curr}`
+  }, null)
+
+  return fql`${result}]`
 }
