@@ -1,6 +1,6 @@
 const deployQuery = require('../fqlx/queries/deploy')
 const removeQuery = require('../fqlx/queries/remove')
-const {ServiceError} = require("fauna");
+const {ServiceError, fql} = require("fauna");
 
 class FQLXDeployCommand {
   command = {
@@ -52,17 +52,20 @@ class FQLXDeployCommand {
       this.logger.info('FQL X schema create/update transaction in progress...')
 
       const q = deployQuery(this.adapt({functions}))
+      // Example expected data:
+      // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
       const res = await this.client.query(q)
 
-      res.data.forEach(d => {
-        if (d.result !== "noop") {
-          const log = `${d.type}: ${d.resources} ${d.result}`
-          this.logger.success(log)
+      res.data.forEach(record => {
+        if (record.result !== "noop") {
+          this.logger.success(`${record.type}: ${record.name} ${record.result}`)
         }
       })
 
       await this.remove(true)
     })
+
+    return this.client.lastTxnTs
   }
 
   async remove(withDeploy = false) {
@@ -74,37 +77,75 @@ class FQLXDeployCommand {
       functions = {}
     }
 
-    const log = (d) => {
-      if (d.resources.data?.length !== 0) {
-        const log = `${d.type}: ${d.resources.data?.map(d => d.ref?.name ?? "unknown")} ${d.result}`
-        this.logger.error(log)
-      }
+    /**
+     * Logs a remove record
+     *
+     * @param record A remove record E.g. { type: "function", name: "MyDeletedFunc", result: "deleted" }
+     */
+    const log = (record) => {
+      this.logger.error(`${record.type}: ${record.name} ${record.result}`)
     }
 
-    const paginate = async (data) => {
-      let a = data.after
+    /**
+     * Paginates a Fauna set until the after token is null and logs the results of each page.
+     *
+     * @param page A Page to paginate and log until complete.
+     * @returns {Promise<void>}
+     */
+    const paginate = async (page) => {
+      let a = page.after
       while (a != null) {
-        const res = await this.client.query(`Set.paginate(${data.after})`)
-        log(res.data)
-        a = res.data.after
+        const res = await this.client.query(fql`Set.paginate(${a})`)
+
+        for (const d of res.data?.data ?? []) {
+          log(d)
+        }
+
+        a = res.data?.after
       }
     }
 
     await this.tryLog(async () => {
-      this.logger.info('FQL X schema remove transaction in progress...')
+      this.logger.info('FQL X schema remove transactions in progress...')
 
       const q = removeQuery(this.adapt({functions}))
+
+      // Example response data:
+      // res.data -> [ Page(data={ type: "function", name: "MyDeletedFunc", result: "deleted" },after=null], ... ]
       const res = await this.client.query(q)
 
-      for (const d of res.data) {
-        log(d)
-        if (d.data?.after != null) {
-          await paginate(d.data)
+      // Loop through array of embedded sets
+      for (const group of res.data) {
+        // Loop through each element in the set and log the record
+        for (const record of group.data ?? []) {
+          log(record)
+        }
+
+        // If there's an after token in the embedded set, we have to paginate
+        if (group.after != null) {
+          await paginate(group)
         }
       }
     })
+
+    return this.client.lastTxnTs
   }
 
+  /**
+   * Takes an object containing resource definitions and adapts them into a format ready for Fauna.
+   *
+   * @param An object containing resource definitions.
+   *        E.g. {
+   *          functions: {
+   *            MyFunction: { body: "x => x + 1" }
+   *          }
+   *        }
+   * @returns An an object containing arrays of resource definitions by resource type.
+   *          E.g. {
+   *            functions: [ { name: "MyFunction", body: "x => x + 1" }]
+   *          }
+   *
+   */
   adapt({ functions = {} }) {
     return {
       functions: Object.entries(functions).map(
