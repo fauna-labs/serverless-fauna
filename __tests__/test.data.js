@@ -17,7 +17,6 @@ Lambda(
 
 const defaultData = {
   created_by_serverless_plugin: true,
-  fauna_api_version: "4",
   deletion_policy: 'destroy',
 }
 
