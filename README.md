@@ -49,10 +49,10 @@ To specify FQL X resources in serverless-fauna, you must declare them under the 
 ## Commands
 These commands do not hook into `sls deploy | remove` at this time. You must run the full command.
 
-| command         | description                                                                                                                                               |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| sls fqlx deploy | sync Fauna FQL X resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `fauna:v10` |
-| sls fqlx remove | remove Fauna FQL X resources created by plugin [read more about deleting policy](#deletion_policy)                                                        |
+| command         | description                                                                                                                                              |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| sls fqlx deploy | sync Fauna FQL X resources specified a config. All resources created by the plugin has string property `created_by_serverless_plugin` set to `fauna:v10` |
+| sls fqlx remove | remove Fauna FQL X resources created by plugin [read more about deleting policy](#deletion_policy)                                                       |
 
 
 ## Configuration

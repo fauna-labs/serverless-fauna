@@ -6,8 +6,8 @@ const { fql, Module } = require('fauna')
  *
  * @param module
  * @param resources An array of definitions that should be excluded from removal.
- * @returns A Query that deletes functions managed by this plugin. The query returns a Fauna
- *          Set: Set[{ type: "Function", name: "MyDeletedFunc", result: "deleted" }, ...]
+ * @returns A Query that deletes resources managed by this plugin. The query returns a Fauna
+ *          Set. E.g. Set[{ type: "Function", name: "MyDeletedFunc", result: "deleted" }, ...]
  */
 const removeExcept  = (module, resources) => {
   let names = resources.map(f => f.name)

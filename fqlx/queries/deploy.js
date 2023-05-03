@@ -6,7 +6,7 @@ const { fql, Module } = require('fauna')
  * @param module The Module to create or update. E.g. Module("Collection")
  * @param params The params to pass to the create or update call.
  * @returns An FQL X Query. The query returns an object:
- *          { type: "function", name: str, result: "created" | "updated" | "noop" }
+ *          { type: "Function", name: str, result: "created" | "updated" | "noop" }
  */
 const createUpdate = (module, params) => {
   return fql`
@@ -38,7 +38,7 @@ const createUpdate = (module, params) => {
  * The query will be an array of individual queries returning the following contract:
  * ```
  * [
- *    { type: "function", name: str, result: "created" | "updated" | "noop" },
+ *    { type: "Function", name: str, result: "created" | "updated" | "noop" },
  *    ...
  * ]
  * ```
@@ -49,14 +49,14 @@ const createUpdate = (module, params) => {
  * ```
  * {
  *   let x = 1
- *   { type: "function", name: "", result: "noop" }
+ *   { type: "Function", name: "", result: "noop" }
  * }
  * ```
  *
  * E.g. This will not work:
  * ```
  * let x = 1
- * { type: "function", name: "", result: "noop" }
+ * { type: "Function", name: "", result: "noop" }
  * ```
  *
  * @param An object containing definitions of each type of resource. E.g.

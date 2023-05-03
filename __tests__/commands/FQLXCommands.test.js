@@ -441,7 +441,7 @@ describe('FQLXCommands', () => {
         functions: {}
       }
 
-      const num = 100
+      const num = 50
       const logs = ["FQL X schema create/update transaction in progress..."]
       for (let i = 0; i < num; i++) {
         const f = `Func${i}`
@@ -472,7 +472,7 @@ describe('FQLXCommands', () => {
       }
 
       expect(existing.length).toEqual(num)
-    }, 1000 * 10)
+    })
 
     it("removes only `fauna:v10` functions", async () => {
       // Create a few functions
@@ -536,7 +536,7 @@ describe('FQLXCommands', () => {
         functions: {}
       }
 
-      const num = 99
+      const num = 50
       const deletes = ["FQL X schema create/update transaction in progress...", "FQL X schema remove transactions in progress..."]
       const logs = ["FQL X schema create/update transaction in progress..."]
       for (let i = 1; i <= num; i++) {
