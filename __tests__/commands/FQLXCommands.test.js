@@ -91,7 +91,7 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: NoData created",
+        "Function: NoData created",
         "FQL X schema remove transactions in progress..."
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -121,7 +121,7 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: NoRole created",
+        "Function: NoRole created",
         "FQL X schema remove transactions in progress..."
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -152,7 +152,7 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: WithRole created",
+        "Function: WithRole created",
         "FQL X schema remove transactions in progress..."
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -197,9 +197,9 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: WithServerRole created",
-        "function: WithAdminRole created",
-        "function: DoubleData created",
+        "Function: WithServerRole created",
+        "Function: WithAdminRole created",
+        "Function: DoubleData created",
         "FQL X schema remove transactions in progress...",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -242,10 +242,10 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: ToUpdate created",
+        "Function: ToUpdate created",
         "FQL X schema remove transactions in progress...",
         "FQL X schema create/update transaction in progress...",
-        "function: ToUpdate updated",
+        "Function: ToUpdate updated",
         "FQL X schema remove transactions in progress...",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -283,10 +283,10 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: ToUpdateNoData created",
+        "Function: ToUpdateNoData created",
         "FQL X schema remove transactions in progress...",
         "FQL X schema create/update transaction in progress...",
-        "function: ToUpdateNoData updated",
+        "Function: ToUpdateNoData updated",
         "FQL X schema remove transactions in progress...",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -328,10 +328,10 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: NestedUpdate created",
+        "Function: NestedUpdate created",
         "FQL X schema remove transactions in progress...",
         "FQL X schema create/update transaction in progress...",
-        "function: NestedUpdate updated",
+        "Function: NestedUpdate updated",
         "FQL X schema remove transactions in progress...",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -367,7 +367,7 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: Managed created",
+        "Function: Managed created",
         "FQL X schema remove transactions in progress...",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
@@ -423,13 +423,13 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: Unmanaged updated",
-        "function: V4Like1 updated",
-        "function: V4Like2 updated",
+        "Function: Unmanaged updated",
+        "Function: V4Like1 updated",
+        "Function: V4Like2 updated",
         "FQL X schema remove transactions in progress...",
         "FQL X schema create/update transaction in progress...",
         "FQL X schema remove transactions in progress...",
-        "function: V4Like2 deleted",
+        "Function: V4Like2 deleted",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
 
@@ -446,7 +446,7 @@ describe('FQLXCommands', () => {
       for (let i = 0; i < num; i++) {
         const f = `Func${i}`
         config.functions[f] = { body: `_ => ${i}`}
-        logs.push(`function: ${f} created`)
+        logs.push(`Function: ${f} created`)
       }
       logs.push("FQL X schema remove transactions in progress...")
 
@@ -514,12 +514,12 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: Managed1 created",
-        "function: Managed2 created",
+        "Function: Managed1 created",
+        "Function: Managed2 created",
         "FQL X schema remove transactions in progress...",
         "FQL X schema create/update transaction in progress...",
         "FQL X schema remove transactions in progress...",
-        "function: Managed2 deleted",
+        "Function: Managed2 deleted",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
 
@@ -542,9 +542,9 @@ describe('FQLXCommands', () => {
       for (let i = 1; i <= num; i++) {
         const f = `Func${i < 10 ? "0" + i : i}`
         config.functions[f] = { body: `_ => ${i}`}
-        logs.push(`function: ${f} created`)
+        logs.push(`Function: ${f} created`)
         if (i !== 1) {
-          deletes.push(`function: ${f} deleted`)
+          deletes.push(`Function: ${f} deleted`)
         }
       }
       logs.push("FQL X schema remove transactions in progress...")
@@ -610,12 +610,12 @@ describe('FQLXCommands', () => {
 
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        "function: Managed1 created",
-        "function: Managed2 created",
+        "Function: Managed1 created",
+        "Function: Managed2 created",
         "FQL X schema remove transactions in progress...",
         "FQL X schema remove transactions in progress...",
-        "function: Managed1 deleted",
-        "function: Managed2 deleted",
+        "Function: Managed1 deleted",
+        "Function: Managed2 deleted",
       ]
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
 

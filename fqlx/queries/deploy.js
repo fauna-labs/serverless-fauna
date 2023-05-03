@@ -1,6 +1,36 @@
-const { fql } = require('fauna')
-const { createUpdateFunction }  = require('./function')
+const { fql, Module } = require('fauna')
 
+/**
+ * Constructs an FQL Query to create/update resources according to the passed parameters.
+ *
+ * @param module The Module to create or update. E.g. Module("Collection")
+ * @param params The params to pass to the create or update call.
+ * @returns An FQL X Query. The query returns an object:
+ *          { type: "function", name: str, result: "created" | "updated" | "noop" }
+ */
+const createUpdate = (module, params) => {
+  return fql`
+  {
+    let p = ${params}
+    let mod = ${module}
+    if (mod.byName(p.name) != null) {
+      let f = mod.byName(p.name)
+      if (Object.entries(p).every(v => v[1] == f[v[0]])) {
+        { type: mod.toString(), name: p.name, result: "noop" }
+      } else {
+        if (p.data != f.data) {
+          let pNullData = Object.assign(p, { data: null })
+          f.update(pNullData)
+        }
+        f.update(p)
+        { type: mod.toString(), name: p.name, result: "updated" }
+      }
+    } else {
+      mod.create(p)
+      { type: mod.toString(), name: p.name, result: "created" }
+    }
+  }`
+}
 
 /**
  * Constructs an FQL Query used to deploy a schema in a single transaction.
@@ -41,7 +71,7 @@ module.exports = ({
   functions = [],
 }) => {
   const queries = [
-    ...functions.map(f => createUpdateFunction(f)),
+    ...functions.map(f => createUpdate(new Module("Function"), f)),
   ]
 
   const result =queries.reduce((prev, curr) => {
@@ -53,3 +83,4 @@ module.exports = ({
 
   return fql`${result}]`
 }
+

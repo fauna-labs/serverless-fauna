@@ -1,5 +1,30 @@
-const { fql } = require('fauna')
-const { removeFunctionsExcept }  = require('./function')
+const { fql, Module } = require('fauna')
+
+/**
+ * Constructs an FQL Query to remove resources managed by this plugin, excluding
+ * those passed as an argument.
+ *
+ * @param module
+ * @param resources An array of definitions that should be excluded from removal.
+ * @returns A Query that deletes functions managed by this plugin. The query returns a Fauna
+ *          Set: Set[{ type: "Function", name: "MyDeletedFunc", result: "deleted" }, ...]
+ */
+const removeExcept  = (module, resources) => {
+  let names = resources.map(f => f.name)
+  return fql`
+  {
+    let mod = ${module}
+    mod.where(
+      f =>
+        !${names}.includes(f.name) &&
+        f.data?.deletion_policy != "retain" &&
+        f.data?.created_by_serverless_plugin == "fauna:v10"
+    ).order(.name).map(f => {
+      f.delete()
+      { type: mod.toString(), name: f.name, result: "deleted" }
+    })
+  }`
+}
 
 /**
  * Constructs an FQL Query used to delete schema in a single transaction, excluding the resources provided as an argument. The query will be an array of individual queries and will return the following contract when evaluated:
@@ -38,7 +63,7 @@ module.exports = ({
   functions = [],
 }) => {
   const queries = [
-    removeFunctionsExcept(functions),
+    removeExcept(new Module("Function"), functions),
   ]
 
   const result =queries.reduce((prev, curr) => {
