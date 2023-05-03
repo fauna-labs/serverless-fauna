@@ -2,17 +2,23 @@ const deployQuery = require('../fqlx/queries/deploy')
 const removeQuery = require('../fqlx/queries/remove')
 const {ServiceError, fql} = require("fauna");
 
-class FQLXDeployCommand {
+class FQLXCommands {
   command = {
     'deploy': {
       usage:
         'Deploy Fauna FQL X schema. (beta)',
       lifecycleEvents: ['deploy'],
     },
+    'remove': {
+      usage:
+        'Remove Fauna FQL X schema. (beta)',
+      lifecycleEvents: ['remove'],
+    },
   }
 
   hooks = {
     'fqlx:deploy:deploy': this.deploy.bind(this),
+    'fqlx:remove:remove': this.remove.bind(this),
   }
 
   constructor({config, faunaClient, logger}) {
@@ -61,11 +67,9 @@ class FQLXDeployCommand {
           this.logger.success(`${record.type}: ${record.name} ${record.result}`)
         }
       })
-
-      await this.remove(true)
     })
 
-    return this.client.lastTxnTs
+    await this.remove(true)
   }
 
   async remove(withDeploy = false) {
@@ -127,8 +131,6 @@ class FQLXDeployCommand {
         }
       }
     })
-
-    return this.client.lastTxnTs
   }
 
   /**
@@ -157,4 +159,4 @@ class FQLXDeployCommand {
   }
 }
 
-module.exports = FQLXDeployCommand
+module.exports = FQLXCommands

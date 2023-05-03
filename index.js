@@ -7,7 +7,7 @@ const getClient = require('./fauna/client')
 
 const fqlxSchemaProperties = require('./fqlx/schema/fauna')
 const getFQLXClient = require('./fqlx/client')
-const FQLXDeployCommand = require('./commands/FQLXDeployCommand')
+const FQLXCommands = require('./commands/FQLXCommands')
 
 class ServerlessFaunaPlugin {
   constructor(serverless, options) {
@@ -39,7 +39,7 @@ class ServerlessFaunaPlugin {
     )
 
     const client = this.config.fqlx !== undefined ? getFQLXClient(this.config.fqlx.client) : null
-    const cmdList = [FQLXDeployCommand]
+    const cmdList = [FQLXCommands]
     cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fqlx"))
   }
 

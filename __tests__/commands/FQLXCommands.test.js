@@ -1,10 +1,10 @@
-const FQLXDeployCommand = require("../../commands/FQLXDeployCommand");
+const FQLXCommands = require("../../commands/FQLXCommands");
 const {Client, fql} = require("fauna");
 const clientConfig = require("../config")
 const Logger = require("../../Logger");
 
 
-describe('FQLXDeployCommand', () => {
+describe('FQLXCommands', () => {
   let faunaClient
   const log = jest.fn()
   const logger = new Logger({ log })
@@ -81,7 +81,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      const cmd = new FQLXDeployCommand({
+      const cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -111,7 +111,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      const cmd = new FQLXDeployCommand({
+      const cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -142,7 +142,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      const cmd = new FQLXDeployCommand({
+      const cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -187,7 +187,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      const cmd = new FQLXDeployCommand({
+      const cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -219,7 +219,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -232,7 +232,7 @@ describe('FQLXDeployCommand', () => {
       config.functions.ToUpdate.data["new"] = "school"
       delete config.functions.ToUpdate.data.old
 
-      new FQLXDeployCommand({
+      new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -262,7 +262,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -273,7 +273,7 @@ describe('FQLXDeployCommand', () => {
       config.functions.ToUpdateNoData.body = "_ => 'new'"
       config.functions.ToUpdateNoData["role"] = "admin"
 
-      new FQLXDeployCommand({
+      new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -308,7 +308,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -318,7 +318,7 @@ describe('FQLXDeployCommand', () => {
 
       delete config.functions.NestedUpdate.data.nest.eggs
 
-      new FQLXDeployCommand({
+      new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -357,7 +357,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -404,7 +404,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -413,7 +413,7 @@ describe('FQLXDeployCommand', () => {
       await cmd.deploy()
 
       delete config.functions.V4Like2
-      new FQLXDeployCommand({
+      new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -451,7 +451,7 @@ describe('FQLXDeployCommand', () => {
       logs.push("FQL X schema remove transactions in progress...")
 
 
-      const cmd = new FQLXDeployCommand({
+      const cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -495,7 +495,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -504,7 +504,7 @@ describe('FQLXDeployCommand', () => {
       await cmd.deploy()
 
       delete config.functions.Managed2
-      new FQLXDeployCommand({
+      new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -550,7 +550,7 @@ describe('FQLXDeployCommand', () => {
       logs.push("FQL X schema remove transactions in progress...")
       logs.push(...deletes)
 
-      let cmd = new FQLXDeployCommand({
+      let cmd = new FQLXCommands({
         config,
         faunaClient,
         logger,
@@ -566,7 +566,7 @@ describe('FQLXDeployCommand', () => {
         }
       }
 
-      cmd = new FQLXDeployCommand({
+      cmd = new FQLXCommands({
         config: nextConfig,
         faunaClient,
         logger,
@@ -576,6 +576,55 @@ describe('FQLXDeployCommand', () => {
 
       expect(log.mock.calls.map(c => c[0])).toEqual(logs)
       await verify({funcs: objToArray(nextConfig.functions)})
+    })
+
+    it("removes only `fauna:v10` functions with remove command", async () => {
+      // Create a few functions
+      await faunaClient.query(
+        fql`[
+          Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
+          Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+          Function.create({ name: "V4Like2", body: "_ => 'v4like2'", data: { created_by_serverless_plugin: "fauna:v4" }})
+        ]`
+      )
+
+      const config = {
+        functions: {
+          Managed1: {
+            body: "_ => 1",
+          },
+          Managed2: {
+            body: "_ => 1",
+          }
+        }
+      }
+
+      let cmd = new FQLXCommands({
+        config,
+        faunaClient,
+        logger,
+      })
+
+      await cmd.deploy()
+      await cmd.remove()
+
+      const logs = [
+        "FQL X schema create/update transaction in progress...",
+        "function: Managed1 created",
+        "function: Managed2 created",
+        "FQL X schema remove transactions in progress...",
+        "FQL X schema remove transactions in progress...",
+        "function: Managed1 deleted",
+        "function: Managed2 deleted",
+      ]
+      expect(log.mock.calls.map(c => c[0])).toEqual(logs)
+
+      const existing = await faunaClient.query(fql`Function.all().map( .name )`)
+      const expected = ["Unmanaged", "V4Like1", "V4Like2"]
+      expect(existing.data.data.length).toEqual(expected.length)
+      for (const e of expected) {
+        expect(existing.data.data).toContain(e)
+      }
     })
   })
 })
