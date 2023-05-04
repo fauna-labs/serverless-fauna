@@ -1,22 +1,22 @@
-const { Client } = require('faunadb')
+const { Client } = require("faunadb");
 
-const clients = {}
+const clients = {};
 
 function getClient({ secret, domain, port, scheme }) {
-  const cacheKey = [domain + secret].join('/')
+  const cacheKey = [domain + secret].join("/");
 
   if (!clients[cacheKey]) {
     clients[cacheKey] = new Client({
       secret,
-      headers: { 'X-Fauna-Source': 'serverless-fauna' },
+      headers: { "X-Fauna-Source": "serverless-fauna" },
       ...(domain && { domain }),
       ...(port && { port }),
       ...(scheme && { scheme }),
-    })
+    });
   }
 
-  return clients[domain + secret]
+  return clients[domain + secret];
 }
 
-module.exports = getClient
-module.exports.clients = clients
+module.exports = getClient;
+module.exports.clients = clients;

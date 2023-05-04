@@ -1,9 +1,9 @@
 module.exports = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
-  required: ['secret'],
+  required: ["secret"],
   properties: {
-    secret: { type: 'string' },
-    endpoint: { type: 'string' },
+    secret: { type: "string" },
+    endpoint: { type: "string" },
   },
-}
+};

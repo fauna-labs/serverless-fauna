@@ -1,21 +1,21 @@
-'use strict'
-const Logger = require('./Logger')
-const DeployCommand = require('./commands/DeployCommand')
-const RemoveCommand = require('./commands/RemoveCommand')
-const faunaSchemaProperties = require('./schemaProps/fauna')
-const getClient = require('./fauna/client')
+"use strict";
+const Logger = require("./Logger");
+const DeployCommand = require("./commands/DeployCommand");
+const RemoveCommand = require("./commands/RemoveCommand");
+const faunaSchemaProperties = require("./schemaProps/fauna");
+const getClient = require("./fauna/client");
 
-const fqlxSchemaProperties = require('./fqlx/schema/fauna')
-const getFQLXClient = require('./fqlx/client')
-const FQLXCommands = require('./commands/FQLXCommands')
+const fqlxSchemaProperties = require("./fqlx/schema/fauna");
+const getFQLXClient = require("./fqlx/client");
+const FQLXCommands = require("./commands/FQLXCommands");
 
 class ServerlessFaunaPlugin {
   constructor(serverless, options) {
-    this.serverless = serverless
-    this.config = this.serverless.service.initialServerlessConfig
-    this.options = options
-    this.logger = new Logger(serverless.cli)
-    this.hooks = {}
+    this.serverless = serverless;
+    this.config = this.serverless.service.initialServerlessConfig;
+    this.options = options;
+    this.logger = new Logger(serverless.cli);
+    this.hooks = {};
 
     this.commands = {
       fauna: {
@@ -24,34 +24,40 @@ class ServerlessFaunaPlugin {
       },
       fqlx: {
         commands: {},
-        options: {}
-      }
-    }
+        options: {},
+      },
+    };
 
-    this.initV10()
-    this.initV4()
+    this.initV10();
+    this.initV4();
   }
 
   initV10() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
-      'fqlx',
+      "fqlx",
       fqlxSchemaProperties
-    )
+    );
 
-    const client = this.config.fqlx !== undefined ? getFQLXClient(this.config.fqlx.client) : null
-    const cmdList = [FQLXCommands]
-    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fqlx"))
+    const client =
+      this.config.fqlx !== undefined
+        ? getFQLXClient(this.config.fqlx.client)
+        : null;
+    const cmdList = [FQLXCommands];
+    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fqlx"));
   }
 
   initV4() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
-      'fauna',
+      "fauna",
       faunaSchemaProperties
-    )
+    );
 
-    const cmdList = [DeployCommand, RemoveCommand]
-    const client = this.config.fauna !== undefined ? getClient(this.config.fauna.client) : null
-    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fauna"))
+    const cmdList = [DeployCommand, RemoveCommand];
+    const client =
+      this.config.fauna !== undefined
+        ? getClient(this.config.fauna.client)
+        : null;
+    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fauna"));
   }
 
   registerCommand(CmdCls, client, namespace) {
@@ -61,10 +67,10 @@ class ServerlessFaunaPlugin {
       config: this.config[namespace],
       options: this.options,
       logger: this.logger,
-    })
-    Object.assign(this.hooks, cmd.hooks)
-    Object.assign(this.commands[namespace].commands, cmd.command)
+    });
+    Object.assign(this.hooks, cmd.hooks);
+    Object.assign(this.commands[namespace].commands, cmd.command);
   }
 }
 
-module.exports = ServerlessFaunaPlugin
+module.exports = ServerlessFaunaPlugin;

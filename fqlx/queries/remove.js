@@ -1,4 +1,4 @@
-const { fql, Module } = require('fauna')
+const { fql, Module } = require("fauna");
 
 /**
  * Constructs an FQL Query to remove resources managed by this plugin, excluding
@@ -9,8 +9,8 @@ const { fql, Module } = require('fauna')
  * @returns A Query that deletes resources managed by this plugin. The query returns a Fauna
  *          Set. E.g. Set[{ type: "Function", name: "MyDeletedFunc", result: "deleted" }, ...]
  */
-const removeExcept  = (module, resources) => {
-  let names = resources.map(f => f.name)
+const removeExcept = (module, resources) => {
+  let names = resources.map((f) => f.name);
   return fql`
   {
     let mod = ${module}
@@ -23,8 +23,8 @@ const removeExcept  = (module, resources) => {
       f.delete()
       { type: mod.toString(), name: f.name, result: "deleted" }
     })
-  }`
-}
+  }`;
+};
 
 /**
  * Constructs an FQL Query used to delete schema in a single transaction, excluding the resources provided as an argument. The query will be an array of individual queries and will return the following contract when evaluated:
@@ -59,19 +59,15 @@ const removeExcept  = (module, resources) => {
  *        }
  * @returns An FQL Query
  */
-module.exports = ({
-  functions = [],
-}) => {
-  const queries = [
-    removeExcept(new Module("Function"), functions),
-  ]
+module.exports = ({ functions = [] }) => {
+  const queries = [removeExcept(new Module("Function"), functions)];
 
-  const result =queries.reduce((prev, curr) => {
+  const result = queries.reduce((prev, curr) => {
     if (prev === null) {
-      return fql`[${curr}`
+      return fql`[${curr}`;
     }
-    return fql`${prev}, ${curr}`
-  }, null)
+    return fql`${prev}, ${curr}`;
+  }, null);
 
-  return fql`${result}]`
-}
+  return fql`${result}]`;
+};
