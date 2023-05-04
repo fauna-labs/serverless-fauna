@@ -1,84 +1,80 @@
-const deployQuery = require('../fqlx/queries/deploy')
-const removeQuery = require('../fqlx/queries/remove')
-const {ServiceError, fql} = require("fauna");
+const deployQuery = require("../fqlx/queries/deploy");
+const removeQuery = require("../fqlx/queries/remove");
+const { ServiceError, fql } = require("fauna");
 
 class FQLXCommands {
   command = {
-    'deploy': {
-      usage:
-        'Deploy Fauna FQL X schema. (beta)',
-      lifecycleEvents: ['deploy'],
+    deploy: {
+      usage: "Deploy Fauna FQL X schema. (beta)",
+      lifecycleEvents: ["deploy"],
     },
-    'remove': {
-      usage:
-        'Remove Fauna FQL X schema. (beta)',
-      lifecycleEvents: ['remove'],
+    remove: {
+      usage: "Remove Fauna FQL X schema. (beta)",
+      lifecycleEvents: ["remove"],
     },
-  }
+  };
 
   hooks = {
-    'fqlx:deploy:deploy': this.deploy.bind(this),
-    'fqlx:remove:remove': this.remove.bind(this),
-  }
+    "fqlx:deploy:deploy": this.deploy.bind(this),
+    "fqlx:remove:remove": this.remove.bind(this),
+  };
 
-  constructor({config, faunaClient, logger}) {
-    this.config = config
-    this.client = faunaClient
-    this.logger = logger
+  constructor({ config, faunaClient, logger }) {
+    this.config = config;
+    this.client = faunaClient;
+    this.logger = logger;
     this.defaultMetadata = {
       created_by_serverless_plugin: "fauna:v10",
-      deletion_policy: config?.deletion_policy || 'destroy',
-    }
+      deletion_policy: config?.deletion_policy || "destroy",
+    };
   }
 
   mergeMetadata(data = {}) {
-    return { ...this.defaultMetadata, ...data }
+    return { ...this.defaultMetadata, ...data };
   }
 
   async tryLog(fn) {
     try {
-      await fn()
+      await fn();
     } catch (e) {
       if (e instanceof ServiceError) {
         this.logger.error(
           `${e.code}: ${e.message}\n---\n${e.queryInfo?.summary}`
-        )
+        );
       } else {
-        this.logger.error(e)
+        this.logger.error(e);
       }
     }
   }
 
   async deploy() {
-    const {
-      functions = {},
-    } = this.config
+    const { functions = {} } = this.config;
 
     await this.tryLog(async () => {
-      this.logger.info('FQL X schema create/update transaction in progress...')
+      this.logger.info("FQL X schema create/update transaction in progress...");
 
-      const q = deployQuery(this.adapt({functions}))
+      const q = deployQuery(this.adapt({ functions }));
       // Example expected data:
       // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
-      const res = await this.client.query(q)
+      const res = await this.client.query(q);
 
-      res.data.forEach(record => {
+      res.data.forEach((record) => {
         if (record.result !== "noop") {
-          this.logger.success(`${record.type}: ${record.name} ${record.result}`)
+          this.logger.success(
+            `${record.type}: ${record.name} ${record.result}`
+          );
         }
-      })
-    })
+      });
+    });
 
-    await this.remove(true)
+    await this.remove(true);
   }
 
   async remove(withDeploy = false) {
-    let {
-      functions = {},
-    } = this.config
+    let { functions = {} } = this.config;
 
     if (!withDeploy) {
-      functions = {}
+      functions = {};
     }
 
     /**
@@ -87,8 +83,8 @@ class FQLXCommands {
      * @param record A remove record E.g. { type: "function", name: "MyDeletedFunc", result: "deleted" }
      */
     const log = (record) => {
-      this.logger.error(`${record.type}: ${record.name} ${record.result}`)
-    }
+      this.logger.error(`${record.type}: ${record.name} ${record.result}`);
+    };
 
     /**
      * Paginates a Fauna set until the after token is null and logs the results of each page.
@@ -97,40 +93,40 @@ class FQLXCommands {
      * @returns {Promise<void>}
      */
     const paginate = async (page) => {
-      let a = page.after
+      let a = page.after;
       while (a != null) {
-        const res = await this.client.query(fql`Set.paginate(${a})`)
+        const res = await this.client.query(fql`Set.paginate(${a})`);
 
         for (const d of res.data?.data ?? []) {
-          log(d)
+          log(d);
         }
 
-        a = res.data?.after
+        a = res.data?.after;
       }
-    }
+    };
 
     await this.tryLog(async () => {
-      this.logger.info('FQL X schema remove transactions in progress...')
+      this.logger.info("FQL X schema remove transactions in progress...");
 
-      const q = removeQuery(this.adapt({functions}))
+      const q = removeQuery(this.adapt({ functions }));
 
       // Example response data:
       // res.data -> [ Page(data={ type: "function", name: "MyDeletedFunc", result: "deleted" },after=null], ... ]
-      const res = await this.client.query(q)
+      const res = await this.client.query(q);
 
       // Loop through array of embedded sets
       for (const group of res.data) {
         // Loop through each element in the set and log the record
         for (const record of group.data ?? []) {
-          log(record)
+          log(record);
         }
 
         // If there's an after token in the embedded set, we have to paginate
         if (group.after != null) {
-          await paginate(group)
+          await paginate(group);
         }
       }
-    })
+    });
   }
 
   /**
@@ -150,13 +146,11 @@ class FQLXCommands {
    */
   adapt({ functions = {} }) {
     return {
-      functions: Object.entries(functions).map(
-        ([k, v]) => {
-          return { name: k, ...v, data: this.mergeMetadata(v.data)}
-        }
-      )
-    }
+      functions: Object.entries(functions).map(([k, v]) => {
+        return { name: k, ...v, data: this.mergeMetadata(v.data) };
+      }),
+    };
   }
 }
 
-module.exports = FQLXCommands
+module.exports = FQLXCommands;

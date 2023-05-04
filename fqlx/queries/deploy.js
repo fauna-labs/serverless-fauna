@@ -1,4 +1,4 @@
-const { fql, Module } = require('fauna')
+const { fql, Module } = require("fauna");
 
 /**
  * Constructs an FQL Query to create/update resources according to the passed parameters.
@@ -29,8 +29,8 @@ const createUpdate = (module, params) => {
       mod.create(p)
       { type: mod.toString(), name: p.name, result: "created" }
     }
-  }`
-}
+  }`;
+};
 
 /**
  * Constructs an FQL Query used to deploy a schema in a single transaction.
@@ -67,20 +67,17 @@ const createUpdate = (module, params) => {
  *        }
  * @returns An FQL Query
  */
-module.exports = ({
-  functions = [],
-}) => {
+module.exports = ({ functions = [] }) => {
   const queries = [
-    ...functions.map(f => createUpdate(new Module("Function"), f)),
-  ]
+    ...functions.map((f) => createUpdate(new Module("Function"), f)),
+  ];
 
-  const result =queries.reduce((prev, curr) => {
+  const result = queries.reduce((prev, curr) => {
     if (prev === null) {
-      return fql`[${curr}`
+      return fql`[${curr}`;
     }
-    return fql`${prev}, ${curr}`
-  }, null)
+    return fql`${prev}, ${curr}`;
+  }, null);
 
-  return fql`${result}]`
-}
-
+  return fql`${result}]`;
+};

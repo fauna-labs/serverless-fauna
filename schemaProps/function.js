@@ -1,11 +1,11 @@
 module.exports = {
-  type: 'object',
-  required: ['name', 'body'],
+  type: "object",
+  required: ["name", "body"],
   additionalProperties: false,
   properties: {
-    name: { type: 'string' },
-    body: { type: 'string' },
-    data: { type: 'object' },
-    role: { type: 'string' },
+    name: { type: "string" },
+    body: { type: "string" },
+    data: { type: "object" },
+    role: { type: "string" },
   },
-}
+};

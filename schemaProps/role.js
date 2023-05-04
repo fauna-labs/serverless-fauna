@@ -1,17 +1,17 @@
 const membershipProp = {
-  type: 'object',
-  required: ['resource'],
+  type: "object",
+  required: ["resource"],
   additionalProperties: false,
   properties: {
-    resource: { type: 'string' },
-    predicate: { type: 'string' },
+    resource: { type: "string" },
+    predicate: { type: "string" },
   },
-}
+};
 
-const actionType = { anyOf: [{ type: 'boolean' }, { type: 'string' }] }
+const actionType = { anyOf: [{ type: "boolean" }, { type: "string" }] };
 
 const rolePrivilegeSchemaActionsProp = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
   properties: {
     read: actionType,
@@ -21,10 +21,10 @@ const rolePrivilegeSchemaActionsProp = {
     history_read: actionType,
     history_write: actionType,
   },
-}
+};
 
 const rolePrivilegeCollectionActionsProp = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
   properties: {
     read: actionType,
@@ -35,40 +35,40 @@ const rolePrivilegeCollectionActionsProp = {
     history_write: actionType,
     unrestricted_read: actionType,
   },
-}
+};
 
 const rolePrivilegeFunctionActionsProp = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
   properties: {
     call: actionType,
   },
-}
+};
 
 const rolePrivilegeIndexActionsProp = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
   properties: {
     unrestricted_read: actionType,
     read: actionType,
   },
-}
+};
 
 const rolePrivilegeProp = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
   properties: {
-    collection: { type: 'string' },
-    index: { type: 'string' },
-    function: { type: 'string' },
+    collection: { type: "string" },
+    index: { type: "string" },
+    function: { type: "string" },
     // following fields has type `boolean` as a workaround that allow use format like:
     // indexes:
-    indexes: { type: 'boolean' },
-    collections: { type: 'boolean' },
-    databases: { type: 'boolean' },
-    roles: { type: 'boolean' },
-    functions: { type: 'boolean' },
-    keys: { type: 'boolean' },
+    indexes: { type: "boolean" },
+    collections: { type: "boolean" },
+    databases: { type: "boolean" },
+    roles: { type: "boolean" },
+    functions: { type: "boolean" },
+    keys: { type: "boolean" },
     actions: {
       anyOf: [
         rolePrivilegeSchemaActionsProp,
@@ -78,25 +78,25 @@ const rolePrivilegeProp = {
       ],
     },
   },
-}
+};
 
 module.exports = {
-  type: 'object',
+  type: "object",
   additionalProperties: false,
-  required: ['name', 'privileges'],
+  required: ["name", "privileges"],
   properties: {
-    name: { type: 'string' },
+    name: { type: "string" },
     membership: {
       anyOf: [
-        { type: 'string' },
-        { type: 'array', items: { type: 'string' } },
+        { type: "string" },
+        { type: "array", items: { type: "string" } },
         membershipProp,
-        { type: 'array', items: membershipProp },
+        { type: "array", items: membershipProp },
       ],
     },
     privileges: {
-      type: 'array',
+      type: "array",
       items: rolePrivilegeProp,
     },
   },
-}
+};

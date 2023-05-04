@@ -1,39 +1,39 @@
-const clientProp = require('./client')
-const collectionProp = require('./collection')
-const indexProp = require('./index')
-const functionProp = require('./function')
-const roleProp = require('./role')
+const clientProp = require("./client");
+const collectionProp = require("./collection");
+const indexProp = require("./index");
+const functionProp = require("./function");
+const roleProp = require("./role");
 
 module.exports = {
-  type: 'object',
-  required: ['client'],
+  type: "object",
+  required: ["client"],
   additionalProperties: false,
   properties: {
     client: clientProp,
-    deletion_policy: { type: 'string' },
+    deletion_policy: { type: "string" },
     collections: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': collectionProp,
+        ".*": collectionProp,
       },
     },
     indexes: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': indexProp,
+        ".*": indexProp,
       },
     },
     functions: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': functionProp,
+        ".*": functionProp,
       },
     },
     roles: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': roleProp,
+        ".*": roleProp,
       },
     },
   },
-}
+};

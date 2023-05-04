@@ -1,6 +1,6 @@
-const { query: q } = require('faunadb')
+const { query: q } = require("faunadb");
 
-const BaseFQL = q.Lambda('ref', [ q.Var('ref'), "this/is/not/a/comment" ])
+const BaseFQL = q.Lambda("ref", [q.Var("ref"), "this/is/not/a/comment"]);
 const BaseFQLString = `
 /*
  * Leading comment block
@@ -13,49 +13,49 @@ Lambda(
     "this/is/not/a/comment"
   ]
 )
-`
+`;
 
 const defaultData = {
   created_by_serverless_plugin: true,
-  deletion_policy: 'destroy',
-}
+  deletion_policy: "destroy",
+};
 
 const configForDeploy = {
   collections: [
-    { name: 'users', data: { ...defaultData, deletion_policy: 'retain' } },
-    { name: 'logs', data: defaultData },
+    { name: "users", data: { ...defaultData, deletion_policy: "retain" } },
+    { name: "logs", data: defaultData },
   ],
   indexes: [
     {
-      name: 'user_by_email',
+      name: "user_by_email",
       data: defaultData,
-      source: [{ collection: q.Collection('users') }],
-      terms: [{ field: ['data', 'test'] }],
+      source: [{ collection: q.Collection("users") }],
+      terms: [{ field: ["data", "test"] }],
     },
   ],
   functions: [
-    { name: 'register', data: defaultData, body: q.Query(BaseFQL), role: null },
+    { name: "register", data: defaultData, body: q.Query(BaseFQL), role: null },
     {
-      name: 'test_circular_dependency',
+      name: "test_circular_dependency",
       data: defaultData,
       body: q.Query(BaseFQL),
-      role: q.Role('test_circular_dependency'),
+      role: q.Role("test_circular_dependency"),
     },
   ],
   roles: {
     createWithoutPrivileges: [
       {
-        name: 'test_circular_dependency',
+        name: "test_circular_dependency",
         data: defaultData,
         membership: [
           {
-            resource: q.Collection('users'),
+            resource: q.Collection("users"),
             predicate: q.Query(BaseFQL),
           },
         ],
         privileges: [
           {
-            resource: q.Function('test_circular_dependency'),
+            resource: q.Function("test_circular_dependency"),
             actions: { call: true },
           },
         ],
@@ -63,41 +63,41 @@ const configForDeploy = {
     ],
     update: [
       {
-        name: 'test_circular_dependency',
+        name: "test_circular_dependency",
         data: defaultData,
         membership: [
           {
-            resource: q.Collection('users'),
+            resource: q.Collection("users"),
             predicate: q.Query(BaseFQL),
           },
         ],
         privileges: [
           {
-            resource: q.Function('test_circular_dependency'),
+            resource: q.Function("test_circular_dependency"),
             actions: { call: true },
           },
         ],
       },
       {
-        name: 'customer',
+        name: "customer",
         data: defaultData,
         membership: [
           {
-            resource: q.Collection('users'),
+            resource: q.Collection("users"),
             predicate: q.Query(BaseFQL),
           },
         ],
         privileges: [
-          { resource: q.Index('user_by_email'), actions: { read: true } },
+          { resource: q.Index("user_by_email"), actions: { read: true } },
         ],
       },
     ],
   },
-}
+};
 
 module.exports = {
   configForDeploy,
   BaseFQLString,
   BaseFQL,
   defaultData,
-}
+};

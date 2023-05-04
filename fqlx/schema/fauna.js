@@ -1,18 +1,18 @@
-const clientProp = require('./client')
-const functionProp = require('./function')
+const clientProp = require("./client");
+const functionProp = require("./function");
 
 module.exports = {
-  type: 'object',
-  required: ['client'],
+  type: "object",
+  required: ["client"],
   additionalProperties: false,
   properties: {
     client: clientProp,
-    deletion_policy: { type: 'string' },
+    deletion_policy: { type: "string" },
     functions: {
-      type: 'object',
+      type: "object",
       patternProperties: {
-        '.*': functionProp,
+        ".*": functionProp,
       },
     },
   },
-}
+};
