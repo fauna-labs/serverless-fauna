@@ -59,8 +59,12 @@ const removeExcept = (module, resources) => {
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ functions = [] }) => {
-  const queries = [removeExcept(new Module("Function"), functions)];
+module.exports = ({ collections = [], functions = [], roles = [] }) => {
+  const queries = [
+    removeExcept(new Module("Collection"), collections),
+    removeExcept(new Module("Function"), functions),
+    removeExcept(new Module("Role"), roles),
+  ];
 
   const result = queries.reduce((prev, curr) => {
     if (prev === null) {

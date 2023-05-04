@@ -48,12 +48,13 @@ class FQLXCommands {
   }
 
   async deploy() {
-    const { functions = {} } = this.config;
+    const { collections = {}, functions = {}, roles = {} } = this.config;
 
     await this.tryLog(async () => {
       this.logger.info("FQL X schema create/update transaction in progress...");
 
-      const q = deployQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions, roles });
+      const q = deployQuery(adapted);
       // Example expected data:
       // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
       const res = await this.client.query(q);
@@ -65,16 +66,18 @@ class FQLXCommands {
           );
         }
       });
-    });
 
-    await this.remove(true);
+      await this.remove(true);
+    });
   }
 
   async remove(withDeploy = false) {
-    let { functions = {} } = this.config;
+    let { collections = {}, functions = {}, roles = {} } = this.config;
 
     if (!withDeploy) {
+      collections = {};
       functions = {};
+      roles = {};
     }
 
     /**
@@ -108,7 +111,8 @@ class FQLXCommands {
     await this.tryLog(async () => {
       this.logger.info("FQL X schema remove transactions in progress...");
 
-      const q = removeQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions, roles });
+      const q = removeQuery(adapted);
 
       // Example response data:
       // res.data -> [ Page(data={ type: "function", name: "MyDeletedFunc", result: "deleted" },after=null], ... ]
@@ -144,11 +148,32 @@ class FQLXCommands {
    *          }
    *
    */
-  adapt({ functions = {} }) {
-    return {
-      functions: Object.entries(functions).map(([k, v]) => {
+  adapt({ roles = {}, collections = {}, functions = {} }) {
+    const toArray = (obj) =>
+      Object.entries(obj).map(([k, v]) => {
         return { name: k, ...v, data: this.mergeMetadata(v.data) };
+      });
+
+    return {
+      roles: toArray(roles),
+      collections: toArray(collections).map((c) => {
+        if (c.indexes != null) {
+          Object.entries(c.indexes).forEach(([idxName, idxDef]) => {
+            // Default index value order to asc to make diffing easier
+            if (idxDef.values != null) {
+              c.indexes[idxName].values = idxDef.values.map((iv) => {
+                if (iv.order == null) {
+                  return { order: "asc", ...iv };
+                } else {
+                  return iv;
+                }
+              });
+            }
+          });
+        }
+        return c;
       }),
+      functions: toArray(functions),
     };
   }
 }

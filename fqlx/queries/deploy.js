@@ -9,20 +9,37 @@ const { fql, Module } = require("fauna");
  *          { type: "Function", name: str, result: "created" | "updated" | "noop" }
  */
 const createUpdate = (module, params) => {
+  let shouldUpdate;
+
+  if (module.name === "Collection") {
+    shouldUpdate = fql`(obj, def) => {
+      Object.entries(p).every(v => {
+        if (v[1] == "indexes") {
+          v[1] == def[v[0]].map(i => { terms: i.terms, values: i.values })
+        } else {
+          v[1] == def[v[0]]
+        }
+      })
+    }`;
+  } else {
+    shouldUpdate = fql`(obj, def) => Object.entries(p).every(v => v[1] == def[v[0]])`;
+  }
+
   return fql`
   {
     let p = ${params}
     let mod = ${module}
+    let shouldUpdate = ${shouldUpdate}
     if (mod.byName(p.name) != null) {
-      let f = mod.byName(p.name)
-      if (Object.entries(p).every(v => v[1] == f[v[0]])) {
+      let def = mod.byName(p.name)
+      if (shouldUpdate(p, def)) {
         { type: mod.toString(), name: p.name, result: "noop" }
       } else {
-        if (p.data != f.data) {
+        if (p.data != def.data) {
           let pNullData = Object.assign(p, { data: null })
-          f.update(pNullData)
+          def.update(pNullData)
         }
-        f.update(p)
+        def.update(p)
         { type: mod.toString(), name: p.name, result: "updated" }
       }
     } else {
@@ -67,9 +84,11 @@ const createUpdate = (module, params) => {
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ functions = [] }) => {
+module.exports = ({ collections = [], functions = [], roles = [] }) => {
   const queries = [
+    ...collections.map((c) => createUpdate(new Module("Collection"), c)),
     ...functions.map((f) => createUpdate(new Module("Function"), f)),
+    ...roles.map((r) => createUpdate(new Module("Role"), r)),
   ];
 
   const result = queries.reduce((prev, curr) => {
