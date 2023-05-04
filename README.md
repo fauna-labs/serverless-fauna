@@ -23,7 +23,7 @@ This [Serverless Framework][serverless-framework] plugin allows you to manage Fa
   - [Deletion policy](#deletion-policy)
 
 
-## Installation
+# Installation
 
 ```bash
 $ npm install @fauna-labs/serverless-fauna --save-dev
@@ -35,13 +35,50 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet.  Minor version releases may still contain breaking changes.  If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file.  For example, `"~0.2.0"` or `"~0.1.6"`
 
+# FQL X (beta)
+To specify FQL X resources in serverless-fauna, you must declare them under the top-level property `fqlx`.
+
+## Supported Resources
+- Functions
+
+## Notable Differences
+- You don't declare a separate `name` property on your config. Instead, the key is used as the name.
+- Create and Update actions during a deploy command are handled in a single transaction. If for some reason your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
+- Destruction of resources during a deploy command is handled as separate transaction(s) following any creates and updates. This may occur in several transactions through pagination.
+
+## Commands
+These commands do not hook into `sls deploy | remove` at this time. You must run the full command.
+
+| command         | description                                                                                                                                              |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| sls fqlx deploy | sync Fauna FQL X resources specified a config. All resources created by the plugin has string property `created_by_serverless_plugin` set to `fauna:v10` |
+| sls fqlx remove | remove Fauna FQL X resources created by plugin [read more about deleting policy](#deletion_policy)                                                       |
+
+
+## Configuration
+
+```yaml
+plugins:
+  - "@fauna-labs/serverless-fauna"
+fqlx:
+  client:
+    secret: ${env:FAUNA_SECRET}
+    # endpoint: http:\\db.fauna.com
+
+  functions:
+    TimesTwo:
+      body: x => x * 2
+```
+
+
+# FQL Version 4
 ## Commands 
 This plugin listens to hooks from default serverless commands, and runs its own logic:
 
-| command | description |
-| --- | --- |
+| command           | description                                                                                                                                    |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
 | serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
-| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy) |
+| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                                     |
 
 If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `serverless fauna deploy`)
 

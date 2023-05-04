@@ -44,7 +44,7 @@ const FilterServerlessResourceWithDestroyPolicy = ({
 }) => {
   return q.Filter(resources, (resource) =>
     q.And([
-      q.Select(['data', 'created_by_serverless_plugin'], resource, false),
+      q.Equals(q.Select(['data', 'created_by_serverless_plugin'], resource, false), true),
       q.Equals(
         q.Select(['data', 'deletion_policy'], resource, 'destroy'),
         'destroy'

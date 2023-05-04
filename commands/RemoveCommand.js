@@ -4,7 +4,7 @@ class RemoveCommand {
   command = {
     remove: {
       usage:
-        'remove fauna schema. the same logic executed for `sls remove` command',
+        'Remove fauna schema. The same logic executed for `sls remove` command',
       lifecycleEvents: ['remove'],
     },
   }
