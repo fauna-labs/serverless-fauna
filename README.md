@@ -22,7 +22,7 @@ This [Serverless Framework][serverless-framework] plugin allows you to manage Fa
       - [Role membership](#role-membership)
   - [Deletion policy](#deletion-policy)
 
-# Installation
+## Installation
 
 ```bash
 $ npm install @fauna-labs/serverless-fauna --save-dev
@@ -36,34 +36,28 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet. Minor version releases may still contain breaking changes. If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file. For example, `"~0.2.0"` or `"~0.1.6"`
 
-# FQL X (beta)
+## FQL X (beta)
 
-To specify FQL X resources in serverless-fauna, you must declare them under the top-level property `fqlx`.
+To specify FQL X resources in serverless-fauna, you must declare them under the top-level property `fqlx`. The `sls fauna deploy` and `remove` commands will run both FQL 4 and FQL X resources declared in the same file.
 
-## Supported Resources
+To run only FQL X or 4 resources, use `sls fauna fqlx|fql4 deploy` or `sls fauna fqlx|fql4 remove`.
+
+### Supported FQL X Resources
 
 - Functions
 
-## Notable Differences
+### Notable Differences
 
 - You don't declare a separate `name` property on your config. Instead, the key is used as the name.
 - Create and Update actions during a deploy command are handled in a single transaction. If for some reason your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
 - Destruction of resources during a deploy command is handled as separate transaction(s) following any creates and updates. This may occur in several transactions through pagination.
 
-## Commands
-
-These commands do not hook into `sls deploy | remove` at this time. You must run the full command.
-
-| command         | description                                                                                                                                              |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| sls fqlx deploy | sync Fauna FQL X resources specified a config. All resources created by the plugin has string property `created_by_serverless_plugin` set to `fauna:v10` |
-| sls fqlx remove | remove Fauna FQL X resources created by plugin [read more about deleting policy](#deletion_policy)                                                       |
-
-## Configuration
+### Configuration for FQL X
 
 ```yaml
 plugins:
   - "@fauna-labs/serverless-fauna"
+
 fqlx:
   client:
     secret: ${env:FAUNA_SECRET}
@@ -74,29 +68,43 @@ fqlx:
       body: x => x * 2
 ```
 
-# FQL Version 4
-
 ## Commands
 
-This plugin listens to hooks from default serverless commands, and runs its own logic:
+This plugin listens to hooks from default serverless commands, and runs its own logic.
 
-| command           | description                                                                                                                                    |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| serverless deploy | sync Fauna resources specified a config. All resources created by the plugin has boolean property `created_by_serverless_plugin` set to `true` |
-| serverless remove | sync Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                                     |
-
-If you would like to run only the Fauna plugin logic, you can just add `fauna` before the command. (ex: `serverless fauna deploy`)
+| command               | description                                                                                                                          |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| sls fauna deploy      | Sync all Fauna resources specified in the config. All resources created by the plugin have a property `created_by_serverless_plugin` |
+| sls fauna remove      | Remove all Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                     |
+| sls fauna fqlx deploy | Sync only Fauna FQL X resources specified in the config. These are specified under the `fqlx` property                               |
+| sls fauna fqlx remove | Remove all Fauna FQL X resources created by plugin, as determined by `created_by_serverless_plugin` == `fauna:v10`                   |
+| sls fauna fql4 deploy | Sync only Fauna FQL v4 resources specified in the config. These are specified under the `fqlx` property                              |
+| sls fauna fql4 remove | Remove all Fauna FQL v4 resources created by plugin, as determined by `created_by_serverless_plugin` == `true`                       |
 
 ## Configuration
 
 ```yaml
 plugins:
   - "@fauna-labs/serverless-fauna"
+
+fqlx:
+  client:
+    secret: ${env:FAUNA_ROOT_KEY}
+    # AND
+    # domain: db.fauna.com
+    # port: 443
+    # scheme: https
+    #  OR
+    # endpoint: https://db.fauna.com
+  functions:
+    TimesTwo:
+      body: x => x * 2
+    
 fauna:
   client:
     secret: ${env:FAUNA_ROOT_KEY}
     # domain: db.fauna.com
-    # port: 433
+    # port: 443
     # scheme: https
   collections:
     Movies:
@@ -135,7 +143,7 @@ fauna:
           - ref
 ```
 
-### Collection configuration
+### FQL 4 Collection configuration
 
 Accepts the same params as Fauna's [`CreateCollection` query](https://docs.fauna.com/fauna/current/api/fql/functions/createcollection?lang=javascript#param_object)
 
@@ -149,7 +157,7 @@ collections:
       some_data_key: some_data_value
 ```
 
-### Function configuration
+### FQL 4 Function configuration
 
 Accepts the same params as Fauna's [`CreateFunction` query](https://docs.fauna.com/fauna/current/api/fql/functions/createfunction?lang=javascript)
 
@@ -163,7 +171,7 @@ functions:
       desc: double number
 ```
 
-### Index configuration
+### FQL 4 Index configuration
 
 Accepts the same params as Fauna's [`CreateIndex` query](https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object).
 
@@ -187,7 +195,7 @@ search_by_category_and_sort_by_year:
       - is_current_year
 ```
 
-#### Index source
+#### FQL 4 Index source
 
 The index source could be a string, and will be interpreted as collection reference.
 
@@ -211,7 +219,7 @@ source:
   - collection: Series
 ```
 
-#### Index terms
+#### FQL 4 Index terms
 
 Index terms describe the fields that should be searchable.
 
@@ -223,7 +231,7 @@ terms:
     - binding
 ```
 
-#### Index values
+#### FQL 4 Index values
 
 Index values describe the fields returned, and have a similar structure to `terms`, but with an additional `reverse` field to define sort order.
 
@@ -236,7 +244,7 @@ values:
     - binding
 ```
 
-#### Index binding
+#### FQL 4 Index binding
 
 [Index bindings](https://docs.fauna.com/fauna/current/tutorials/indexes/bindings) allow you to compute fields for a source while the document is being indexed.
 
@@ -262,7 +270,7 @@ source:
     is_current_year: ${file(./IsCurrentYear.fql)}
 ```
 
-### Role configuration
+### FQL 4 Role configuration
 
 Accepts the same params as Fauna's [`CreateRole` query](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript).
 
@@ -282,7 +290,7 @@ roles:
           call: true
 ```
 
-#### Role schema privileges
+#### FQL 4 Role schema privileges
 
 Read more about the [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
 
@@ -368,7 +376,7 @@ roles:
 
 This plugin keeps your Fauna database in sync with your serverless configuration file. Therefore, the plugin will remove any resources that currently exist in Fauna, but are not declared in your serverless.com configuration file.
 
-If there are resources that you absolutely do not want deleted, even though they might not be in your serverless.com configuration, you can set `deletion_policy` to `retain` (the default being `destroy`) in the top level `fauna` configuration. In example below, Fauna resources will not be deleted:
+If there are resources that you absolutely do not want deleted, even though they might not be in your serverless.com configuration, you can set `deletion_policy` to `retain` (the default being `destroy`) in the top level `fauna` or `fqlx` configuration. In example below, Fauna resources will not be deleted:
 
 ```yaml
 fauna:

@@ -5,7 +5,7 @@ const DeployQueriesMock = jest
   .mockReturnValue([{ query: q.Now(), name: "mock" }]);
 jest.doMock("../../fauna/DeployQueries", () => DeployQueriesMock);
 
-const DeployCommand = require("../../commands/DeployCommand");
+const FQL4DeployCommand = require("../../commands/FQL4DeployCommand");
 const Logger = require("../../Logger");
 const { BaseFQL, BaseFQLString, defaultData } = require("../test.data");
 
@@ -17,9 +17,9 @@ const faunaClient = { query: jest.fn().mockResolvedValue() };
 
 let command;
 
-describe("DeployCommand", () => {
+describe("FQL4DeployCommand", () => {
   beforeAll(() => {
-    command = new DeployCommand({
+    command = new FQL4DeployCommand({
       faunaClient,
       config: {},
       logger,
@@ -27,7 +27,7 @@ describe("DeployCommand", () => {
   });
 
   afterEach(() => {
-    DeployQueriesMock.mockReset();
+    DeployQueriesMock.mockClear();
   });
 
   describe("Adapters", () => {
@@ -350,7 +350,7 @@ describe("DeployCommand", () => {
 
     describe("merge fauna & resource level deletion_policy", () => {
       test("fauna deletion_policy=retain", () => {
-        const command = new DeployCommand({
+        const command = new FQL4DeployCommand({
           faunaClient,
           config: {
             deletion_policy: "retain",
@@ -404,7 +404,7 @@ describe("DeployCommand", () => {
   });
 
   test("Deploy", () => {
-    const command = new DeployCommand({
+    const command = new FQL4DeployCommand({
       faunaClient,
       logger,
       config: {

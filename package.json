@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "prettier --write .",
     "lint-ci": "prettier --check .",
-    "test": "jest --coverage"
+    "test": "jest --coverage --runInBand"
   },
   "dependencies": {
     "fauna": "^0.6.2",
