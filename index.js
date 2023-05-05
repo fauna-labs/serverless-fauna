@@ -31,7 +31,8 @@ class ServerlessFaunaPlugin {
     const removeCommands = []
 
     if (this.config.fqlx !== undefined) {
-      const client = getFQLXClient(this.config.fqlx.client)
+      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
+      const client = options.help ? null : getFQLXClient(this.config.fqlx.client)
       const cmd = new FQLXCommands({
         faunaClient: client,
         serverless: this.serverless,
@@ -45,7 +46,8 @@ class ServerlessFaunaPlugin {
     }
 
     if (this.config.fauna !== undefined) {
-      const client = getClient(this.config.fauna.client)
+      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
+      const client = options.help ? null : getClient(this.config.fauna.client)
       const deploy = new FQL4DeployCommand({
         faunaClient: client,
         serverless: this.serverless,
