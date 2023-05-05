@@ -73,7 +73,7 @@ fqlx:
 This plugin listens to hooks from default serverless commands, and runs its own logic.
 
 | command               | description                                                                                                                          |
-|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | sls fauna deploy      | Sync all Fauna resources specified in the config. All resources created by the plugin have a property `created_by_serverless_plugin` |
 | sls fauna remove      | Remove all Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                     |
 | sls fauna fqlx deploy | Sync only Fauna FQL X resources specified in the config. These are specified under the `fqlx` property                               |
@@ -99,7 +99,7 @@ fqlx:
   functions:
     TimesTwo:
       body: x => x * 2
-    
+
 fauna:
   client:
     secret: ${env:FAUNA_ROOT_KEY}

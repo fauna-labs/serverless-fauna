@@ -5,7 +5,8 @@ const FQL4RemoveCommand = require("./FQL4RemoveCommand");
 class FaunaCommands {
   command = {
     deploy: {
-      usage: "Deploy all schema definitions. FQL X resources are deployed first.",
+      usage:
+        "Deploy all schema definitions. FQL X resources are deployed first.",
       lifecycleEvents: ["deploy"],
     },
     remove: {
@@ -22,7 +23,7 @@ class FaunaCommands {
           usage: "Remove only FQL X schema definitions. (beta)",
           lifecycleEvents: ["remove"],
         },
-      }
+      },
     },
     fql4: {
       commands: {
@@ -34,8 +35,8 @@ class FaunaCommands {
           usage: "Remove only FQL 4 schema definitions.",
           lifecycleEvents: ["remove"],
         },
-      }
-    }
+      },
+    },
   };
 
   hooks = {
@@ -59,68 +60,67 @@ class FaunaCommands {
    * @param removeCommands An ordered list of remove commands.
    */
   constructor(config, deployCommands, removeCommands) {
-    this.config = config
-    this.deployCommands = deployCommands
-    this.removeCommands = removeCommands
+    this.config = config;
+    this.deployCommands = deployCommands;
+    this.removeCommands = removeCommands;
   }
-
 
   async deploy() {
     for (const cmd of this.deployCommands) {
-      await cmd.deploy()
+      await cmd.deploy();
     }
   }
 
   async remove() {
     for (const cmd of this.removeCommands) {
-      await cmd.remove()
+      await cmd.remove();
     }
   }
 
   async deploy_fqlx() {
     if (this.config.fqlx == null) {
-      throw new Error("No `fqlx` schema defined.")
+      throw new Error("No `fqlx` schema defined.");
     }
 
     for (const cmd of this.deployCommands) {
       if (cmd instanceof FQLXCommands) {
-        await cmd.deploy()
+        await cmd.deploy();
       }
     }
   }
 
   async remove_fqlx() {
     if (this.config.fqlx == null) {
-      throw new Error("No `fqlx` schema defined.")
+      throw new Error("No `fqlx` schema defined.");
     }
 
     for (const cmd of this.removeCommands) {
       if (cmd instanceof FQLXCommands) {
-        await cmd.remove()
+        await cmd.remove();
       }
     }
   }
 
   async deploy_fql4() {
     if (this.config.fauna == null) {
-      throw new Error("No `fauna` (FQL 4) schema defined.")
+      throw new Error("No `fauna` (FQL 4) schema defined.");
     }
 
     for (const cmd of this.deployCommands) {
       if (cmd instanceof FQL4DeployCommand) {
-        await cmd.deploy()
+        await cmd.deploy();
       }
     }
   }
 
   async remove_fql4() {
     if (this.config.fauna == null) {
-      throw new Error("No `fauna` (FQL 4) schema defined.")
+      throw new Error("No `fauna` (FQL 4) schema defined.");
     }
 
     for (const cmd of this.removeCommands) {
       if (cmd instanceof FQL4RemoveCommand) {
-        await cmd.remove()
+        await cmd.remove();
       }
     }
   }

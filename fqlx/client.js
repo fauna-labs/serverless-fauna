@@ -2,7 +2,9 @@ const { Client } = require("fauna");
 
 function getFQLXClient({ secret, endpoint, scheme, port, domain }) {
   if (endpoint != null && scheme != null && port != null && domain != null) {
-    throw new Error("Configure the client with `endpoint` or `schema`, `domain` and `port`, but not both.")
+    throw new Error(
+      "Configure the client with `endpoint` or `schema`, `domain` and `port`, but not both."
+    );
   }
 
   if (endpoint == null && scheme == null && port == null && domain == null) {
@@ -15,9 +17,9 @@ function getFQLXClient({ secret, endpoint, scheme, port, domain }) {
       secret,
     });
   } else {
-    scheme = scheme ?? "https"
-    port = port ?? 443
-    domain = domain ?? "db.fauna.com"
+    scheme = scheme ?? "https";
+    port = port ?? 443;
+    domain = domain ?? "db.fauna.com";
     return new Client({
       endpoint: new URL(`${scheme}://${domain}:${port}`),
       secret,

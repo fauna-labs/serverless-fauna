@@ -4,7 +4,6 @@ const { ResourceMap } = require("../fauna/utility");
 const baseEvalFqlQuery = require("../fauna/baseEvalFqlQuery");
 
 class FQL4DeployCommand {
-
   constructor({ config, faunaClient, logger }) {
     this.config = config;
     this.faunaClient = faunaClient;
@@ -61,7 +60,7 @@ class FQL4DeployCommand {
       this.logger.error(error);
 
       // Rethrow so we non-zero exit
-      throw error
+      throw error;
     }
   }
 

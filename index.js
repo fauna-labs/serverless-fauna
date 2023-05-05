@@ -27,12 +27,14 @@ class ServerlessFaunaPlugin {
 
     this.initSchema();
 
-    const deployCommands = []
-    const removeCommands = []
+    const deployCommands = [];
+    const removeCommands = [];
 
     if (this.config.fqlx !== undefined) {
       // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
-      const client = options.help ? null : getFQLXClient(this.config.fqlx.client)
+      const client = options.help
+        ? null
+        : getFQLXClient(this.config.fqlx.client);
       const cmd = new FQLXCommands({
         faunaClient: client,
         serverless: this.serverless,
@@ -41,22 +43,22 @@ class ServerlessFaunaPlugin {
         logger: this.logger,
       });
 
-      deployCommands.push(cmd)
-      removeCommands.push(cmd)
+      deployCommands.push(cmd);
+      removeCommands.push(cmd);
     }
 
     if (this.config.fauna !== undefined) {
       // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
-      const client = options.help ? null : getClient(this.config.fauna.client)
+      const client = options.help ? null : getClient(this.config.fauna.client);
       const deploy = new FQL4DeployCommand({
         faunaClient: client,
         serverless: this.serverless,
         config: this.config.fauna,
         options: this.options,
         logger: this.logger,
-      })
+      });
 
-      deployCommands.push(deploy)
+      deployCommands.push(deploy);
 
       const remove = new FQL4RemoveCommand({
         faunaClient: client,
@@ -64,13 +66,16 @@ class ServerlessFaunaPlugin {
         config: this.config.fauna,
         options: this.options,
         logger: this.logger,
-      })
+      });
 
-      removeCommands.push(remove)
-
+      removeCommands.push(remove);
     }
 
-    const faunaCommands = new FaunaCommands(this.config, deployCommands, removeCommands.reverse())
+    const faunaCommands = new FaunaCommands(
+      this.config,
+      deployCommands,
+      removeCommands.reverse()
+    );
 
     Object.assign(this.hooks, faunaCommands.hooks);
     Object.assign(this.commands.fauna.commands, faunaCommands.command);

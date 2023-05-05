@@ -1,7 +1,6 @@
 const RemoveQuery = require("../fauna/RemoveQuery");
 
 class FQL4RemoveCommand {
-
   constructor({ faunaClient, logger }) {
     this.faunaClient = faunaClient;
     this.logger = logger;
@@ -25,7 +24,7 @@ class FQL4RemoveCommand {
         this.logger.error(error);
 
         // Rethrow so we non-zero exit
-        throw error
+        throw error;
       });
   }
 }

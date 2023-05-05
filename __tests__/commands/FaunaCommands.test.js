@@ -1,6 +1,6 @@
 const FQLXCommands = require("../../commands/FQLXCommands");
-const FQL4DeployCommand = require("../../commands/FQL4DeployCommand")
-const FQL4RemoveCommand = require("../../commands/FQL4RemoveCommand")
+const FQL4DeployCommand = require("../../commands/FQL4DeployCommand");
+const FQL4RemoveCommand = require("../../commands/FQL4RemoveCommand");
 const FaunaCommands = require("../../commands/FaunaCommands");
 
 const { fql } = require("fauna");
@@ -9,13 +9,12 @@ const Logger = require("../../Logger");
 const getFql4Client = require("../../fauna/client");
 const getFqlxClient = require("../../fqlx/client");
 
-
 describe("FaunaCommands", () => {
   let fqlxClient;
-  let fql4Client
+  let fql4Client;
   const log = jest.fn();
   const logger = new Logger({ log });
-  let fqlxCommands, fql4DeployCommand, fql4RemoveCommand, faunaCommands
+  let fqlxCommands, fql4DeployCommand, fql4RemoveCommand, faunaCommands;
 
   const fqlxConfig = {
     functions: {
@@ -36,33 +35,33 @@ describe("FaunaCommands", () => {
 
   const cleanup = async () => {
     await fqlxClient.query(fql`Function.all().map(f => f.delete())`);
-  }
+  };
 
   const verify = async (logs) => {
     expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
-  }
+  };
 
   beforeAll(async () => {
-    fql4Client =getFql4Client(clientConfig);
+    fql4Client = getFql4Client(clientConfig);
     fqlxClient = getFqlxClient(clientConfig);
 
     fqlxCommands = new FQLXCommands({
       config: fqlxConfig,
       faunaClient: fqlxClient,
       logger,
-    })
+    });
 
     fql4DeployCommand = new FQL4DeployCommand({
       config: fql4Config,
       faunaClient: fql4Client,
       logger,
-    })
+    });
 
     fql4RemoveCommand = new FQL4RemoveCommand({
       config: fql4Config,
       faunaClient: fql4Client,
       logger,
-    })
+    });
 
     faunaCommands = new FaunaCommands(
       {
@@ -70,16 +69,16 @@ describe("FaunaCommands", () => {
         fqlx: { ...fqlxConfig },
       },
       [fqlxCommands, fql4DeployCommand],
-      [fql4RemoveCommand, fqlxCommands],
-    )
+      [fql4RemoveCommand, fqlxCommands]
+    );
   });
 
   beforeEach(async () => {
     await cleanup();
-  })
+  });
 
   it("deploys all in expected order", async () => {
-    await faunaCommands.deploy()
+    await faunaCommands.deploy();
 
     const expectedLogs = [
       "FQL X schema create/update transaction in progress...",
@@ -87,67 +86,65 @@ describe("FaunaCommands", () => {
       "FQL X schema remove transactions in progress...",
       "Schema updating in process...",
       "function `FQL4Func` was created",
-    ]
+    ];
 
-    await verify(expectedLogs)
-  })
+    await verify(expectedLogs);
+  });
 
   it("removes all in expected order", async () => {
-    await faunaCommands.deploy()
-    log.mockClear()
-    await faunaCommands.remove()
+    await faunaCommands.deploy();
+    log.mockClear();
+    await faunaCommands.remove();
     const expectedLogs = [
-      "Resource Function(\"FQL4Func\") deleted",
+      'Resource Function("FQL4Func") deleted',
       "FQL X schema remove transactions in progress...",
       "Function: FQLXFunc deleted",
-    ]
+    ];
 
-    await verify(expectedLogs)
-  })
+    await verify(expectedLogs);
+  });
 
   it("deploys only fqlx", async () => {
-    await faunaCommands.deploy_fqlx()
+    await faunaCommands.deploy_fqlx();
 
     const expectedLogs = [
       "FQL X schema create/update transaction in progress...",
       "Function: FQLXFunc created",
       "FQL X schema remove transactions in progress...",
-    ]
+    ];
 
-    await verify(expectedLogs)
-  })
+    await verify(expectedLogs);
+  });
 
   it("removes only fqlx", async () => {
-    await faunaCommands.deploy()
-    log.mockClear()
-    await faunaCommands.remove_fqlx()
+    await faunaCommands.deploy();
+    log.mockClear();
+    await faunaCommands.remove_fqlx();
     const expectedLogs = [
       "FQL X schema remove transactions in progress...",
       "Function: FQLXFunc deleted",
-    ]
+    ];
 
-    await verify(expectedLogs)
-  })
+    await verify(expectedLogs);
+  });
 
   it("deploys only fql4", async () => {
-    await faunaCommands.deploy_fql4()
+    await faunaCommands.deploy_fql4();
 
     const expectedLogs = [
       "Schema updating in process...",
       "function `FQL4Func` was created",
-    ]
+    ];
 
-    await verify(expectedLogs)
-  })
+    await verify(expectedLogs);
+  });
 
   it("removes only fql4", async () => {
-    await faunaCommands.deploy()
-    log.mockClear()
-    await faunaCommands.remove_fql4()
-    const expectedLogs = [
-      "Resource Function(\"FQL4Func\") deleted",
-    ]
+    await faunaCommands.deploy();
+    log.mockClear();
+    await faunaCommands.remove_fql4();
+    const expectedLogs = ['Resource Function("FQL4Func") deleted'];
 
-    await verify(expectedLogs)
-  })
-})
+    await verify(expectedLogs);
+  });
+});

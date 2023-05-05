@@ -75,17 +75,16 @@ describe("FQLXCommands", () => {
 
   describe("functions", () => {
     const prepareNFunctions = (n) => {
-      const config = { functions: {}}
-      const names = []
+      const config = { functions: {} };
+      const names = [];
 
       for (let i = 1; i <= n; i++) {
         const f = `Func${i < 10 ? "0" + i : i}`;
         config.functions[f] = { body: `_ => ${i}` };
         names.push(f);
       }
-      return { config, names }
-    }
-
+      return { config, names };
+    };
 
     it("creates a single function without data", async () => {
       const config = {
@@ -454,9 +453,8 @@ describe("FQLXCommands", () => {
     });
 
     it("handles a reasonably sized config", async () => {
-
       const num = 50;
-      const { config, names } = prepareNFunctions(num)
+      const { config, names } = prepareNFunctions(num);
 
       const cmd = new FQLXCommands({
         config,
@@ -467,9 +465,9 @@ describe("FQLXCommands", () => {
       await cmd.deploy();
       const logs = [
         "FQL X schema create/update transaction in progress...",
-        ...names.map(n => `Function: ${n} created`),
+        ...names.map((n) => `Function: ${n} created`),
         "FQL X schema remove transactions in progress...",
-        ]
+      ];
 
       expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
 
@@ -547,7 +545,7 @@ describe("FQLXCommands", () => {
 
     it("removes all `fauna:v10` functions with pagination", async () => {
       const num = 50;
-      const { config, names } = prepareNFunctions(num)
+      const { config, names } = prepareNFunctions(num);
 
       let cmd = new FQLXCommands({
         config,
@@ -558,15 +556,15 @@ describe("FQLXCommands", () => {
       await cmd.deploy();
       let logs = [
         "FQL X schema create/update transaction in progress...",
-        ...names.map(n => `Function: ${n} created`),
+        ...names.map((n) => `Function: ${n} created`),
         "FQL X schema remove transactions in progress...",
-      ]
+      ];
       expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
-      log.mockClear()
+      log.mockClear();
 
-      const firstKv = Object.entries(config.functions)[0]
-      const nextConfig = {functions: {}}
-      nextConfig.functions[firstKv[0]] = firstKv[1]
+      const firstKv = Object.entries(config.functions)[0];
+      const nextConfig = { functions: {} };
+      nextConfig.functions[firstKv[0]] = firstKv[1];
 
       cmd = new FQLXCommands({
         config: nextConfig,
@@ -579,8 +577,8 @@ describe("FQLXCommands", () => {
       logs = [
         "FQL X schema create/update transaction in progress...",
         "FQL X schema remove transactions in progress...",
-        ...names.slice(1).map(n => `Function: ${n} deleted`)
-      ]
+        ...names.slice(1).map((n) => `Function: ${n} deleted`),
+      ];
       expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
       await verify({ funcs: objToArray(nextConfig.functions) });
     });

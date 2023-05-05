@@ -3,7 +3,6 @@ const removeQuery = require("../fqlx/queries/remove");
 const { ServiceError, fql } = require("fauna");
 
 class FQLXCommands {
-
   constructor({ config, faunaClient, logger }) {
     this.config = config;
     this.client = faunaClient;
@@ -31,7 +30,7 @@ class FQLXCommands {
       }
 
       // Rethrow so we non-zero exit
-      throw e
+      throw e;
     }
   }
 
