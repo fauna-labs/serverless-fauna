@@ -105,7 +105,7 @@ describe("FaunaCommands", () => {
   });
 
   it("deploys only fqlx", async () => {
-    await faunaCommands.deploy_fqlx();
+    await faunaCommands.deployFqlx();
 
     const expectedLogs = [
       "FQL X schema create/update transaction in progress...",
@@ -119,7 +119,7 @@ describe("FaunaCommands", () => {
   it("removes only fqlx", async () => {
     await faunaCommands.deploy();
     log.mockClear();
-    await faunaCommands.remove_fqlx();
+    await faunaCommands.removeFqlx();
     const expectedLogs = [
       "FQL X schema remove transactions in progress...",
       "Function: FQLXFunc deleted",
@@ -129,7 +129,7 @@ describe("FaunaCommands", () => {
   });
 
   it("deploys only fql4", async () => {
-    await faunaCommands.deploy_fql4();
+    await faunaCommands.deployFql4();
 
     const expectedLogs = [
       "Schema updating in process...",
@@ -142,7 +142,7 @@ describe("FaunaCommands", () => {
   it("removes only fql4", async () => {
     await faunaCommands.deploy();
     log.mockClear();
-    await faunaCommands.remove_fql4();
+    await faunaCommands.removeFql4();
     const expectedLogs = ['Resource Function("FQL4Func") deleted'];
 
     await verify(expectedLogs);

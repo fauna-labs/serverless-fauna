@@ -3,54 +3,6 @@ const FQL4DeployCommand = require("./FQL4DeployCommand");
 const FQL4RemoveCommand = require("./FQL4RemoveCommand");
 
 class FaunaCommands {
-  command = {
-    deploy: {
-      usage:
-        "Deploy all schema definitions. FQL X resources are deployed first.",
-      lifecycleEvents: ["deploy"],
-    },
-    remove: {
-      usage: "Remove all schema definitions. FQL X resources are removed last.",
-      lifecycleEvents: ["remove"],
-    },
-    fqlx: {
-      commands: {
-        deploy: {
-          usage: "Deploy only FQL X schema definitions. (beta)",
-          lifecycleEvents: ["deploy"],
-        },
-        remove: {
-          usage: "Remove only FQL X schema definitions. (beta)",
-          lifecycleEvents: ["remove"],
-        },
-      },
-    },
-    fql4: {
-      commands: {
-        deploy: {
-          usage: "Deploy only FQL 4 schema definitions.",
-          lifecycleEvents: ["deploy"],
-        },
-        remove: {
-          usage: "Remove only FQL 4 schema definitions.",
-          lifecycleEvents: ["remove"],
-        },
-      },
-    },
-  };
-
-  hooks = {
-    "deploy:deploy": this.deploy.bind(this),
-    "fauna:deploy:deploy": this.deploy.bind(this),
-    "fauna:fqlx:deploy:deploy": this.deploy_fqlx.bind(this),
-    "fauna:fql4:deploy:deploy": this.deploy_fql4.bind(this),
-
-    "remove:remove": this.remove.bind(this),
-    "fauna:remove:remove": this.remove.bind(this),
-    "fauna:fqlx:remove:remove": this.remove_fqlx.bind(this),
-    "fauna:fql4:remove:remove": this.remove_fql4.bind(this),
-  };
-
   /**
    *  Takes an ordered list of deploy and remove commands and constructs
    *  a FaunaCommands instance.
@@ -63,6 +15,55 @@ class FaunaCommands {
     this.config = config;
     this.deployCommands = deployCommands;
     this.removeCommands = removeCommands;
+
+    this.command = {
+      deploy: {
+        usage:
+          "Deploy all schema definitions. FQL X resources are deployed first.",
+        lifecycleEvents: ["deploy"],
+      },
+      remove: {
+        usage:
+          "Remove all schema definitions. FQL X resources are removed last.",
+        lifecycleEvents: ["remove"],
+      },
+      fqlx: {
+        commands: {
+          deploy: {
+            usage: "Deploy only FQL X schema definitions. (beta)",
+            lifecycleEvents: ["deploy"],
+          },
+          remove: {
+            usage: "Remove only FQL X schema definitions. (beta)",
+            lifecycleEvents: ["remove"],
+          },
+        },
+      },
+      fql4: {
+        commands: {
+          deploy: {
+            usage: "Deploy only FQL 4 schema definitions.",
+            lifecycleEvents: ["deploy"],
+          },
+          remove: {
+            usage: "Remove only FQL 4 schema definitions.",
+            lifecycleEvents: ["remove"],
+          },
+        },
+      },
+    };
+
+    this.hooks = {
+      "deploy:deploy": this.deploy.bind(this),
+      "fauna:deploy:deploy": this.deploy.bind(this),
+      "fauna:fqlx:deploy:deploy": this.deployFqlx.bind(this),
+      "fauna:fql4:deploy:deploy": this.deployFql4.bind(this),
+
+      "remove:remove": this.remove.bind(this),
+      "fauna:remove:remove": this.remove.bind(this),
+      "fauna:fqlx:remove:remove": this.removeFqlx.bind(this),
+      "fauna:fql4:remove:remove": this.removeFql4.bind(this),
+    };
   }
 
   async deploy() {
@@ -77,7 +78,7 @@ class FaunaCommands {
     }
   }
 
-  async deploy_fqlx() {
+  async deployFqlx() {
     if (this.config.fqlx == null) {
       throw new Error("No `fqlx` schema defined.");
     }
@@ -89,7 +90,7 @@ class FaunaCommands {
     }
   }
 
-  async remove_fqlx() {
+  async removeFqlx() {
     if (this.config.fqlx == null) {
       throw new Error("No `fqlx` schema defined.");
     }
@@ -101,7 +102,7 @@ class FaunaCommands {
     }
   }
 
-  async deploy_fql4() {
+  async deployFql4() {
     if (this.config.fauna == null) {
       throw new Error("No `fauna` (FQL 4) schema defined.");
     }
@@ -113,7 +114,7 @@ class FaunaCommands {
     }
   }
 
-  async remove_fql4() {
+  async removeFql4() {
     if (this.config.fauna == null) {
       throw new Error("No `fauna` (FQL 4) schema defined.");
     }
