@@ -1,7 +1,7 @@
 const { Client } = require("fauna");
 
 function getFQLXClient({ secret, endpoint, scheme, port, domain }) {
-  if (endpoint != null && scheme != null && port != null && domain != null) {
+  if (endpoint != null && (scheme != null || port != null || domain != null)) {
     throw new Error(
       "Configure the client with `endpoint` or `schema`, `domain` and `port`, but not both."
     );
