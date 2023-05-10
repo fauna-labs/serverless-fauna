@@ -1,13 +1,14 @@
 "use strict";
 const Logger = require("./Logger");
-const DeployCommand = require("./commands/DeployCommand");
-const RemoveCommand = require("./commands/RemoveCommand");
+const FQL4DeployCommand = require("./commands/FQL4DeployCommand");
+const FQL4RemoveCommand = require("./commands/FQL4RemoveCommand");
 const faunaSchemaProperties = require("./schemaProps/fauna");
 const getClient = require("./fauna/client");
 
-const fqlxSchemaProperties = require("./fqlx/schema/fauna");
+const fqlxSchemaProperties = require("./fqlx/schema/fqlx");
 const getFQLXClient = require("./fqlx/client");
 const FQLXCommands = require("./commands/FQLXCommands");
+const FaunaCommands = require("./commands/FaunaCommands");
 
 class ServerlessFaunaPlugin {
   constructor(serverless, options) {
@@ -22,54 +23,74 @@ class ServerlessFaunaPlugin {
         commands: {},
         options: {},
       },
-      fqlx: {
-        commands: {},
-        options: {},
-      },
     };
 
-    this.initV10();
-    this.initV4();
+    this.initSchema();
+
+    const deployCommands = [];
+    const removeCommands = [];
+
+    if (this.config.fqlx !== undefined) {
+      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
+      const client = options.help
+        ? null
+        : getFQLXClient(this.config.fqlx.client);
+      const cmd = new FQLXCommands({
+        faunaClient: client,
+        serverless: this.serverless,
+        config: this.config.fqlx,
+        options: this.options,
+        logger: this.logger,
+      });
+
+      deployCommands.push(cmd);
+      removeCommands.push(cmd);
+    }
+
+    if (this.config.fauna !== undefined) {
+      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
+      const client = options.help ? null : getClient(this.config.fauna.client);
+      const deploy = new FQL4DeployCommand({
+        faunaClient: client,
+        serverless: this.serverless,
+        config: this.config.fauna,
+        options: this.options,
+        logger: this.logger,
+      });
+
+      deployCommands.push(deploy);
+
+      const remove = new FQL4RemoveCommand({
+        faunaClient: client,
+        serverless: this.serverless,
+        config: this.config.fauna,
+        options: this.options,
+        logger: this.logger,
+      });
+
+      removeCommands.push(remove);
+    }
+
+    const faunaCommands = new FaunaCommands(
+      this.config,
+      deployCommands,
+      removeCommands.reverse()
+    );
+
+    Object.assign(this.hooks, faunaCommands.hooks);
+    Object.assign(this.commands.fauna.commands, faunaCommands.command);
   }
 
-  initV10() {
+  initSchema() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
       "fqlx",
       fqlxSchemaProperties
     );
 
-    const client =
-      this.config.fqlx !== undefined
-        ? getFQLXClient(this.config.fqlx.client)
-        : null;
-    const cmdList = [FQLXCommands];
-    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fqlx"));
-  }
-
-  initV4() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
       "fauna",
       faunaSchemaProperties
     );
-
-    const cmdList = [DeployCommand, RemoveCommand];
-    const client =
-      this.config.fauna !== undefined
-        ? getClient(this.config.fauna.client)
-        : null;
-    cmdList.forEach((CmdCls) => this.registerCommand(CmdCls, client, "fauna"));
-  }
-
-  registerCommand(CmdCls, client, namespace) {
-    const cmd = new CmdCls({
-      faunaClient: client,
-      serverless: this.serverless,
-      config: this.config[namespace],
-      options: this.options,
-      logger: this.logger,
-    });
-    Object.assign(this.hooks, cmd.hooks);
-    Object.assign(this.commands[namespace].commands, cmd.command);
   }
 }
 

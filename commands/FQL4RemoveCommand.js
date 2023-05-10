@@ -1,26 +1,13 @@
 const RemoveQuery = require("../fauna/RemoveQuery");
 
-class RemoveCommand {
-  command = {
-    remove: {
-      usage:
-        "Remove fauna schema. The same logic executed for `sls remove` command",
-      lifecycleEvents: ["remove"],
-    },
-  };
-
-  hooks = {
-    "remove:remove": this.remove.bind(this),
-    "fauna:remove:remove": this.remove.bind(this),
-  };
-
+class FQL4RemoveCommand {
   constructor({ faunaClient, logger }) {
     this.faunaClient = faunaClient;
     this.logger = logger;
   }
 
-  remove() {
-    return this.faunaClient
+  async remove() {
+    return await this.faunaClient
       .query(RemoveQuery())
       .then((resources) => {
         if (resources.length) {
@@ -34,10 +21,12 @@ class RemoveCommand {
         }
       })
       .catch((error) => {
-        console.info(error);
         this.logger.error(error);
+
+        // Rethrow so we non-zero exit
+        throw error;
       });
   }
 }
 
-module.exports = RemoveCommand;
+module.exports = FQL4RemoveCommand;

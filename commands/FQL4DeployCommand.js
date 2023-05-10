@@ -3,20 +3,7 @@ const { query: q } = require("faunadb");
 const { ResourceMap } = require("../fauna/utility");
 const baseEvalFqlQuery = require("../fauna/baseEvalFqlQuery");
 
-class DeployCommand {
-  command = {
-    deploy: {
-      usage:
-        "Deploy Fauna schema. The same logic executed for `sls deploy` command",
-      lifecycleEvents: ["deploy"],
-    },
-  };
-
-  hooks = {
-    "deploy:deploy": this.deploy.bind(this),
-    "fauna:deploy:deploy": this.deploy.bind(this),
-  };
-
+class FQL4DeployCommand {
   constructor({ config, faunaClient, logger }) {
     this.config = config;
     this.faunaClient = faunaClient;
@@ -71,6 +58,9 @@ class DeployCommand {
       }
     } catch (error) {
       this.logger.error(error);
+
+      // Rethrow so we non-zero exit
+      throw error;
     }
   }
 
@@ -246,4 +236,4 @@ class DeployCommand {
   }
 }
 
-module.exports = DeployCommand;
+module.exports = FQL4DeployCommand;
