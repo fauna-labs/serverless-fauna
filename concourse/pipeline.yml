@@ -1,0 +1,76 @@
+---
+resource_types:
+  - name: slack-notification
+    type: docker-image
+    source:
+      repository: cfcommunity/slack-notification-resource
+      tag: latest
+
+resources:
+  - name: notify
+    type: slack-notification
+    icon: slack
+    source:
+      url: ((slack-webhook))
+
+  - name: repo
+    type: git
+    icon: github
+    source:
+      uri: git@github.com:fauna-labs/serverless-fauna.git
+      branch: main
+
+groups:
+  - name: standard-release
+    jobs:
+      - set-self
+      - test
+      - release
+
+jobs:
+  - name: set-self
+    serial: true
+    plan:
+      - get: repo
+        trigger: true
+      - set_pipeline: self
+        file: repo/concourse/pipeline.yml
+
+  - name: test
+    serial: true
+    plan:
+      - get: repo
+        passed:
+          - set-self
+
+      - task: run-tests
+        file: repo/concourse/tasks/run-tests.yml
+        privileged: true
+        on_success:
+          put: notify
+          params:
+            text: "@fauna-labs/serverless-fauna release passed integration tests"
+        on_failure:
+          put: notify
+          params:
+            text: "@fauna-labs/serverless-fauna release failed integration tests"
+
+  - name: release
+    serial: true
+    plan:
+      - get: repo
+        passed:
+          - test
+
+      - task: publish
+        file: repo/concourse/tasks/npm-publish.yml
+        params:
+          NPM_TOKEN: ((npm_token))
+        on_success:
+          put: notify
+          params:
+            text_file: slack-message/publish
+        on_failure:
+          put: notify
+          params:
+            text_file: slack-message/publish
