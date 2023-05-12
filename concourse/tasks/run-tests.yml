@@ -1,0 +1,28 @@
+---
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    repository: karlkfi/concourse-dcind
+
+params:
+  FAUNA_ROOT_KEY:
+  FAUNA_DOMAIN:
+  FAUNA_SCHEME:
+  FAUNA_PORT:
+
+inputs:
+  - name: repo
+
+run:
+  path: entrypoint.sh
+  args:
+    - bash
+    - -ceu
+    - |
+      # start containers
+      docker-compose -f repo/concourse/docker-compose-fauna.yml run node-lts
+      # stop and remove containers
+      docker-compose -f repo/concourse/docker-compose-fauna.yml down
+      # remove volumes
+      docker volume rm $(docker volume ls -q)
