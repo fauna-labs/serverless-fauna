@@ -19,6 +19,7 @@ resources:
     source:
       uri: git@github.com:fauna-labs/serverless-fauna.git
       branch: main
+      private_key: ((github-ssh-key))
 
 groups:
   - name: standard-release
@@ -40,6 +41,7 @@ jobs:
     serial: true
     plan:
       - get: repo
+        trigger: true
         passed:
           - set-self
 

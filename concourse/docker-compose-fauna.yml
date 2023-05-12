@@ -26,4 +26,5 @@ services:
       - |
         apk add --no-cache curl
         ./concourse/scripts/wait-for-it.sh http://faunadb:8443/ping
+        npm install
         npm run test
