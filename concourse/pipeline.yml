@@ -67,7 +67,7 @@ jobs:
       - task: publish
         file: repo/concourse/tasks/npm-publish.yml
         params:
-          NPM_TOKEN: ((npm_token))
+          NPM_TOKEN: ((fauna-labs-npm-token))
         on_success:
           put: notify
           params:
