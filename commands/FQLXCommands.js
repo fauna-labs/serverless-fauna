@@ -3,10 +3,11 @@ const removeQuery = require("../fqlx/queries/remove");
 const { ServiceError, fql } = require("fauna");
 
 class FQLXCommands {
-  constructor({ config, faunaClient, logger }) {
+  constructor({ config, faunaClient, logger, options }) {
     this.config = config;
     this.client = faunaClient;
     this.logger = logger;
+    this.options = { ...options };
     this.defaultMetadata = {
       created_by_serverless_plugin: "fauna:v10",
       deletion_policy: config?.deletion_policy || "destroy",
@@ -34,86 +35,91 @@ class FQLXCommands {
     }
   }
 
+  buildMessage(record) {
+    const dryrun = record.dryrun ? "(DryRun) " : "";
+    return `${dryrun}${record.type} ${record.name}: ${record.action}`;
+  }
+
   async deploy() {
-    const { functions = {} } = this.config;
+    const { collections = {}, functions = {}, roles = {} } = this.config;
 
     await this.tryLog(async () => {
-      this.logger.info("FQL X schema create/update transaction in progress...");
+      this.logger.info(
+        `${
+          this.options.dryrun ? "(DryRun) " : ""
+        }FQL 10 schema update in progress...`
+      );
 
-      const q = deployQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions, roles });
+      const q = deployQuery({ ...adapted, options: this.options });
       // Example expected data:
-      // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
+      // res.data -> [ { type: "function", name: "MyFunc", action: "created" } ]
       const res = await this.client.query(q);
 
-      res.data.forEach((record) => {
-        if (record.result !== "noop") {
-          this.logger.success(
-            `${record.type}: ${record.name} ${record.result}`
-          );
+      res.data.flat().forEach((r) => {
+        this.logger.success(this.buildMessage(r));
+        if (r.original !== undefined && r.result !== undefined) {
+          const original = r.original ?? {};
+          const result = r.result ?? {};
+          const allKeys = [
+            ...new Set(Object.keys(original).concat(Object.keys(result))),
+          ];
+          allKeys.forEach((k) => {
+            if (k in original && !(k in result)) {
+              this.logger.error(`-   ${k}: ${JSON.stringify(original[k])}`);
+            } else if (k in result && !(k in original)) {
+              this.logger.success(`+   ${k}: ${JSON.stringify(result[k])}`);
+            } else if (
+              JSON.stringify(result[k]) !== JSON.stringify(original[k])
+            ) {
+              this.logger.error(`-   ${k}: ${JSON.stringify(original[k])}`);
+              this.logger.success(`+   ${k}: ${JSON.stringify(result[k])}`);
+            }
+          });
         }
       });
-    });
 
-    await this.remove(true);
+      await this.remove(true);
+      this.logger.success(
+        `${this.options.dryrun ? "(DryRun) " : ""}FQL 10 schema update complete`
+      );
+    });
   }
 
   async remove(withDeploy = false) {
-    let { functions = {} } = this.config;
+    let { collections = {}, functions = {}, roles = {} } = this.config;
 
     if (!withDeploy) {
+      this.logger.info(
+        `${
+          this.options.dryrun ? "(DryRun) " : ""
+        }FQL 10 schema removal in progress...`
+      );
+      collections = {};
       functions = {};
+      roles = {};
     }
 
-    /**
-     * Logs a remove record
-     *
-     * @param record A remove record E.g. { type: "function", name: "MyDeletedFunc", result: "deleted" }
-     */
-    const log = (record) => {
-      this.logger.error(`${record.type}: ${record.name} ${record.result}`);
-    };
-
-    /**
-     * Paginates a Fauna set until the after token is null and logs the results of each page.
-     *
-     * @param page A Page to paginate and log until complete.
-     * @returns {Promise<void>}
-     */
-    const paginate = async (page) => {
-      let a = page.after;
-      while (a != null) {
-        const res = await this.client.query(fql`Set.paginate(${a})`);
-
-        for (const d of res.data?.data ?? []) {
-          log(d);
-        }
-
-        a = res.data?.after;
-      }
-    };
-
     await this.tryLog(async () => {
-      this.logger.info("FQL X schema remove transactions in progress...");
-
-      const q = removeQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions, roles });
+      const q = removeQuery({ ...adapted, options: this.options });
 
       // Example response data:
       // res.data -> [ Page(data={ type: "function", name: "MyDeletedFunc", result: "deleted" },after=null], ... ]
       const res = await this.client.query(q);
 
-      // Loop through array of embedded sets
-      for (const group of res.data) {
-        // Loop through each element in the set and log the record
-        for (const record of group.data ?? []) {
-          log(record);
-        }
-
-        // If there's an after token in the embedded set, we have to paginate
-        if (group.after != null) {
-          await paginate(group);
-        }
-      }
+      res.data.flat(2).forEach((r) => {
+        this.logger.error(this.buildMessage(r));
+      });
     });
+
+    if (!withDeploy) {
+      this.logger.info(
+        `${
+          this.options.dryrun ? "(DryRun) " : ""
+        }FQL 10 schema removal complete`
+      );
+    }
   }
 
   /**
@@ -131,11 +137,39 @@ class FQLXCommands {
    *          }
    *
    */
-  adapt({ functions = {} }) {
-    return {
-      functions: Object.entries(functions).map(([k, v]) => {
+  adapt({ roles = {}, collections = {}, functions = {} }) {
+    const toArray = (obj) =>
+      Object.entries(obj).map(([k, v]) => {
         return { name: k, ...v, data: this.mergeMetadata(v.data) };
+      });
+
+    return {
+      roles: toArray(roles),
+      collections: toArray(collections).map((c) => {
+        c.indexes = c.indexes ?? {};
+        c.constraints = c.constraints ?? [];
+        Object.entries(c.indexes).forEach(([idxName, idxDef]) => {
+          // c.indexes[idxName].values  = c.indexes[idxName].values ?? null
+          // c.indexes[idxName].terms = c.indexes[idxName].terms ?? null
+
+          // Default index value order to asc to make diffing easier
+          if (idxDef.values != null) {
+            c.indexes[idxName].values = idxDef.values.map((iv) => {
+              if (iv.order == null) {
+                return { order: "asc", ...iv };
+              } else {
+                return iv;
+              }
+            });
+          }
+
+          // Default queryable to true to make diffing easier
+          idxDef.queryable = idxDef.queryable ?? true;
+        });
+
+        return c;
       }),
+      functions: toArray(functions),
     };
   }
 }

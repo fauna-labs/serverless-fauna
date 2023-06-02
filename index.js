@@ -5,7 +5,7 @@ const FQL4RemoveCommand = require("./commands/FQL4RemoveCommand");
 const faunaSchemaProperties = require("./schemaProps/fauna");
 const getClient = require("./fauna/client");
 
-const fqlxSchemaProperties = require("./fqlx/schema/fqlx");
+const fqlxSchemaProperties = require("./fqlx/schema/fql10");
 const getFQLXClient = require("./fqlx/client");
 const FQLXCommands = require("./commands/FQLXCommands");
 const FaunaCommands = require("./commands/FaunaCommands");
@@ -30,15 +30,15 @@ class ServerlessFaunaPlugin {
     const deployCommands = [];
     const removeCommands = [];
 
-    if (this.config.fqlx !== undefined) {
+    if (this.config.fql10 !== undefined) {
       // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
       const client = options.help
         ? null
-        : getFQLXClient(this.config.fqlx.client);
+        : getFQLXClient(this.config.fql10.client);
       const cmd = new FQLXCommands({
         faunaClient: client,
         serverless: this.serverless,
-        config: this.config.fqlx,
+        config: this.config.fql10,
         options: this.options,
         logger: this.logger,
       });
@@ -83,7 +83,7 @@ class ServerlessFaunaPlugin {
 
   initSchema() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
-      "fqlx",
+      "fql10",
       fqlxSchemaProperties
     );
 
