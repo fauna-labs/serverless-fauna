@@ -1,7 +1,7 @@
-const DeployQueries = require("../fauna/DeployQueries");
+const DeployQueries = require("../fauna/v4/DeployQueries");
 const { query: q } = require("faunadb");
-const { ResourceMap } = require("../fauna/utility");
-const baseEvalFqlQuery = require("../fauna/baseEvalFqlQuery");
+const { ResourceMap } = require("../fauna/v4/utility");
+const baseEvalFqlQuery = require("../fauna/v4/baseEvalFqlQuery");
 
 class FQL4DeployCommand {
   constructor({ config, faunaClient, logger }) {
@@ -22,7 +22,7 @@ class FQL4DeployCommand {
       roles = {},
     } = this.config;
     try {
-      this.logger.info("Schema updating in process...");
+      this.logger.info("FQL 4 schema update in progress...");
 
       const queries = DeployQueries({
         roles: this.splitAndAdaptRoles(Object.values(roles)),
@@ -54,7 +54,7 @@ class FQL4DeployCommand {
       }
 
       if (!isSchemaUpdated) {
-        this.logger.success("Schema up to date");
+        this.logger.success("FQL 4 schema up to date");
       }
     } catch (error) {
       this.logger.error(error);

@@ -2,12 +2,12 @@
 const Logger = require("./Logger");
 const FQL4DeployCommand = require("./commands/FQL4DeployCommand");
 const FQL4RemoveCommand = require("./commands/FQL4RemoveCommand");
-const faunaSchemaProperties = require("./schemaProps/fauna");
-const getClient = require("./fauna/client");
+const faunaSchema = require("./fauna/v4/schema/fauna");
+const getV4Client = require("./fauna/v4/client");
 
-const fqlxSchemaProperties = require("./fqlx/schema/fqlx");
-const getFQLXClient = require("./fqlx/client");
-const FQLXCommands = require("./commands/FQLXCommands");
+const faunaV10Schema = require("./fauna/v10/schema/fauna");
+const getV10Client = require("./fauna/v10/client");
+const FQL10Commands = require("./commands/FQL10Commands");
 const FaunaCommands = require("./commands/FaunaCommands");
 
 class ServerlessFaunaPlugin {
@@ -30,15 +30,15 @@ class ServerlessFaunaPlugin {
     const deployCommands = [];
     const removeCommands = [];
 
-    if (this.config.fqlx !== undefined) {
+    if (this.config.fauna_v10 !== undefined) {
       // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
       const client = options.help
         ? null
-        : getFQLXClient(this.config.fqlx.client);
-      const cmd = new FQLXCommands({
+        : getV10Client(this.config.fauna_v10.client);
+      const cmd = new FQL10Commands({
         faunaClient: client,
         serverless: this.serverless,
-        config: this.config.fqlx,
+        config: this.config.fauna_v10,
         options: this.options,
         logger: this.logger,
       });
@@ -49,7 +49,9 @@ class ServerlessFaunaPlugin {
 
     if (this.config.fauna !== undefined) {
       // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
-      const client = options.help ? null : getClient(this.config.fauna.client);
+      const client = options.help
+        ? null
+        : getV4Client(this.config.fauna.client);
       const deploy = new FQL4DeployCommand({
         faunaClient: client,
         serverless: this.serverless,
@@ -71,11 +73,12 @@ class ServerlessFaunaPlugin {
       removeCommands.push(remove);
     }
 
-    const faunaCommands = new FaunaCommands(
-      this.config,
+    const faunaCommands = new FaunaCommands({
+      config: this.config,
       deployCommands,
-      removeCommands.reverse()
-    );
+      removeCommands: removeCommands.reverse(),
+      options: this.options,
+    });
 
     Object.assign(this.hooks, faunaCommands.hooks);
     Object.assign(this.commands.fauna.commands, faunaCommands.command);
@@ -83,13 +86,13 @@ class ServerlessFaunaPlugin {
 
   initSchema() {
     this.serverless.configSchemaHandler.defineTopLevelProperty(
-      "fqlx",
-      fqlxSchemaProperties
+      "fauna_v10",
+      faunaV10Schema
     );
 
     this.serverless.configSchemaHandler.defineTopLevelProperty(
       "fauna",
-      faunaSchemaProperties
+      faunaSchema
     );
   }
 }
