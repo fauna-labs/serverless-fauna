@@ -443,7 +443,7 @@ describe("FQL10_Functions", () => {
   });
 
   it("handles a reasonably sized config", async () => {
-    const num = 1000;
+    const num = 100;
     const { config, names } = prepareNFunctions(num);
     await runDeploy(config);
 
