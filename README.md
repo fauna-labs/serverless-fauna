@@ -36,13 +36,13 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet. Minor version releases may still contain breaking changes. If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file. For example, `"~0.2.0"` or `"~0.1.6"`
 
-## FQL 10 (beta)
+## FQL X (beta)
 
-To specify FQL 10 resources in serverless-fauna, you must declare them under the top-level property `fqlx`. The `sls fauna deploy` and `remove` commands will run both FQL 4 and FQL 10 resources declared in the same file.
+To specify FQL X resources in serverless-fauna, you must declare them under the top-level property `fqlx`. The `sls fauna deploy` and `remove` commands will run both FQL 4 and FQL X resources declared in the same file.
 
-To run only FQL 10 or 4 resources, use `sls fauna fqlx|fql4 deploy` or `sls fauna fqlx|fql4 remove`.
+To run only FQL X or 4 resources, use `sls fauna fqlx|fql4 deploy` or `sls fauna fqlx|fql4 remove`.
 
-### Supported FQL 10 Resources
+### Supported FQL X Resources
 
 - Functions
 
@@ -52,7 +52,7 @@ To run only FQL 10 or 4 resources, use `sls fauna fqlx|fql4 deploy` or `sls faun
 - Create and Update actions during a deploy command are handled in a single transaction. If for some reason your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
 - Destruction of resources during a deploy command is handled as separate transaction(s) following any creates and updates. This may occur in several transactions through pagination.
 
-### Configuration for FQL 10
+### Configuration for FQL X
 
 ```yaml
 plugins:
@@ -76,10 +76,10 @@ This plugin listens to hooks from default serverless commands, and runs its own 
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | sls fauna deploy      | Sync all Fauna resources specified in the config. All resources created by the plugin have a property `created_by_serverless_plugin` |
 | sls fauna remove      | Remove all Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                     |
-| sls fauna fqlx deploy | Sync only Fauna FQL 10 resources specified in the config. These are specified under the `fqlx` property                              |
-| sls fauna fqlx remove | Remove all Fauna FQL 10 resources created by plugin, as determined by `created_by_serverless_plugin` == `fauna:v10`                  |
-| sls fauna fql4 deploy | Sync only Fauna FQL 4 resources specified in the config. These are specified under the `fqlx` property                               |
-| sls fauna fql4 remove | Remove all Fauna FQL 4 resources created by plugin, as determined by `created_by_serverless_plugin` == `true`                        |
+| sls fauna fqlx deploy | Sync only Fauna FQL X resources specified in the config. These are specified under the `fqlx` property                               |
+| sls fauna fqlx remove | Remove all Fauna FQL X resources created by plugin, as determined by `created_by_serverless_plugin` == `fauna:v10`                   |
+| sls fauna fql4 deploy | Sync only Fauna FQL v4 resources specified in the config. These are specified under the `fqlx` property                              |
+| sls fauna fql4 remove | Remove all Fauna FQL v4 resources created by plugin, as determined by `created_by_serverless_plugin` == `true`                       |
 
 ## Configuration
 
