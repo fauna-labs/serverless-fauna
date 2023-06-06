@@ -1,9 +1,9 @@
 const config = require("../config");
-const getClient = require("../../fauna/client");
-const { GetAllResourcesRefs } = require("../../fauna/utility");
+const getClient = require("../../fauna/v4/client");
+const { GetAllResourcesRefs } = require("../../fauna/v4/utility");
 const { query: q } = require("faunadb");
 const { defaultData } = require("../test.data");
-const RemoveQuery = require("../../fauna/RemoveQuery");
+const RemoveQuery = require("../../fauna/v4/RemoveQuery");
 
 describe("RemoveQuery", () => {
   const rootClient = getClient(config);

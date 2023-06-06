@@ -1,7 +1,7 @@
-const DeployQueries = require("../fauna/DeployQueries");
+const DeployQueries = require("../fauna/v4/DeployQueries");
 const { query: q } = require("faunadb");
-const { ResourceMap } = require("../fauna/utility");
-const baseEvalFqlQuery = require("../fauna/baseEvalFqlQuery");
+const { ResourceMap } = require("../fauna/v4/utility");
+const baseEvalFqlQuery = require("../fauna/v4/baseEvalFqlQuery");
 
 class FQL4DeployCommand {
   constructor({ config, faunaClient, logger }) {

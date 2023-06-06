@@ -1,4 +1,4 @@
-const FQLXCommands = require("../../commands/FQLXCommands");
+const FQL10Commands = require("../../commands/FQL10Commands");
 const FQL4DeployCommand = require("../../commands/FQL4DeployCommand");
 const FQL4RemoveCommand = require("../../commands/FQL4RemoveCommand");
 const FaunaCommands = require("../../commands/FaunaCommands");
@@ -6,8 +6,8 @@ const FaunaCommands = require("../../commands/FaunaCommands");
 const { fql } = require("fauna");
 const clientConfig = require("../config");
 const Logger = require("../../Logger");
-const getFql4Client = require("../../fauna/client");
-const getFqlxClient = require("../../fqlx/client");
+const getFql4Client = require("../../fauna/v4/client");
+const getFqlxClient = require("../../fauna/v10/client");
 
 describe("FaunaCommands", () => {
   let fqlxClient;
@@ -45,7 +45,7 @@ describe("FaunaCommands", () => {
     fql4Client = getFql4Client(clientConfig);
     fqlxClient = getFqlxClient(clientConfig);
 
-    fqlxCommands = new FQLXCommands({
+    fqlxCommands = new FQL10Commands({
       config: fqlxConfig,
       faunaClient: fqlxClient,
       logger,

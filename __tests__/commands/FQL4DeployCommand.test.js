@@ -3,7 +3,7 @@ const { query: q } = fauna;
 const DeployQueriesMock = jest
   .fn()
   .mockReturnValue([{ query: q.Now(), name: "mock" }]);
-jest.doMock("../../fauna/DeployQueries", () => DeployQueriesMock);
+jest.doMock("../../fauna/v4/DeployQueries", () => DeployQueriesMock);
 
 const FQL4DeployCommand = require("../../commands/FQL4DeployCommand");
 const Logger = require("../../Logger");
