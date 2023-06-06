@@ -77,6 +77,11 @@ describe("FaunaCommands", () => {
     await cleanup();
   });
 
+  afterAll(async () => {
+    fql4Client.close();
+    fqlxClient.close();
+  });
+
   it("deploys all in expected order", async () => {
     await faunaCommands.deploy();
 

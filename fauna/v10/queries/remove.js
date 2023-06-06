@@ -6,10 +6,11 @@ const { fql, Module } = require("fauna");
  *
  * @param module
  * @param resources An array of definitions that should be excluded from removal.
- * @returns A Query that deletes resources managed by this plugin. The query returns a Fauna
- *          Set. E.g. Set[{ type: "Function", name: "MyDeletedFunc", result: "deleted" }, ...]
+ * @param preview A boolean flag to indicate whether to remove or just log.
+ * @returns A Query that deletes resources managed by this plugin. The query returns an array of arrays
+ *          E.g. [{ type: "Function", name: "MyDeletedFunc", action: "deleted", preview: false}, ...]
  */
-const removeExcept = (module, resources) => {
+const removeExcept = (module, resources, preview = false) => {
   let names = resources.map((f) => f.name);
   return fql`
   {
@@ -17,20 +18,23 @@ const removeExcept = (module, resources) => {
     mod.where(
       f =>
         !${names}.includes(f.name) &&
-        f.data?.deletion_policy != "retain" &&
+        f.data?.deletion_policy == "destroy" &&
         f.data?.created_by_serverless_plugin == "fauna:v10"
-    ).order(.name).map(f => {
-      f.delete()
-      { type: mod.toString(), name: f.name, result: "deleted" }
+    ).order(.name).toArray().map(f => {
+      if (!${preview}) {
+        f.delete()
+      }
+      { type: mod.toString(), name: f.name, action: "deleted", preview: ${preview}}
     })
   }`;
 };
 
 /**
- * Constructs an FQL Query used to delete schema in a single transaction, excluding the resources provided as an argument. The query will be an array of individual queries and will return the following contract when evaluated:
+ * Constructs an FQL Query used to delete schema in a single transaction, excluding the resources provided as an argument.
+ * The query will be an array of individual queries, and will return the following contract when evaluated:
  * ```
  * [
- *    Set[{ type: "function", name: str, result: "deleted" }, ...],
+ *    [{ type: "function", name: str, action: "deleted" }, ...],
  *    ...
  * ]
  * ```
@@ -41,14 +45,14 @@ const removeExcept = (module, resources) => {
  * ```
  * {
  *   let name = "MyFunc"
- *   [{ type: "function", name: name, result: "deleted" }].toSet()
+ *   [{ type: "function", name: name, action: "deleted" }]
  * }
  * ```
  *
  * E.g. This will not work:
  * ```
  * let name = "MyFunc"
- * [{ type: "function", name: name, result: "deleted" }].toSet()
+ * [{ type: "function", name: name, action: "deleted" }]
  * ```
  *
  * @param An object containing arrays of resource definitions by type of resource to retain. E.g.
@@ -62,12 +66,10 @@ const removeExcept = (module, resources) => {
 module.exports = ({ functions = [] }) => {
   const queries = [removeExcept(new Module("Function"), functions)];
 
-  const result = queries.reduce((prev, curr) => {
-    if (prev === null) {
-      return fql`[${curr}`;
-    }
-    return fql`${prev}, ${curr}`;
-  }, null);
+  // The wire protocol doesn't yet support passing an array of queries, so
+  // we can manually construct the string parts.
+  const stringParts = ["[", ...queries.slice(0, -1).map((_) => ","), "]"];
 
-  return fql`${result}]`;
+  // Now pass the string parts and the queries to fql(), the backing function for fql``
+  return fql(stringParts, ...queries);
 };

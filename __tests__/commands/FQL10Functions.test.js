@@ -73,6 +73,10 @@ describe("FQL 10 Functions", () => {
     await cleanup();
   });
 
+  afterAll(async () => {
+    faunaClient.close();
+  });
+
   const prepareNFunctions = (n) => {
     const config = { functions: {} };
     const names = [];
