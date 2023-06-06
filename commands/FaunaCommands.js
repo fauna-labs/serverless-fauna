@@ -1,4 +1,4 @@
-const FQLXCommands = require("./FQLXCommands");
+const FQL10Commands = require("./FQL10Commands");
 const FQL4DeployCommand = require("./FQL4DeployCommand");
 const FQL4RemoveCommand = require("./FQL4RemoveCommand");
 
@@ -84,7 +84,7 @@ class FaunaCommands {
     }
 
     for (const cmd of this.deployCommands) {
-      if (cmd instanceof FQLXCommands) {
+      if (cmd instanceof FQL10Commands) {
         await cmd.deploy();
       }
     }
@@ -96,7 +96,7 @@ class FaunaCommands {
     }
 
     for (const cmd of this.removeCommands) {
-      if (cmd instanceof FQLXCommands) {
+      if (cmd instanceof FQL10Commands) {
         await cmd.remove();
       }
     }

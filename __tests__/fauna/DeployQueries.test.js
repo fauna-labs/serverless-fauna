@@ -1,6 +1,6 @@
 const { query: q, values, Expr } = require("faunadb");
-const DeployQueries = require("../../fauna/DeployQueries");
-const getClient = require("../../fauna/client");
+const DeployQueries = require("../../fauna/v4/DeployQueries");
+const getClient = require("../../fauna/v4/client");
 const config = require("../config");
 const { configForDeploy, defaultData } = require("../test.data");
 

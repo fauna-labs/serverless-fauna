@@ -1,8 +1,8 @@
-const deployQuery = require("../fqlx/queries/deploy");
-const removeQuery = require("../fqlx/queries/remove");
+const deployQuery = require("../fauna/v10/queries/deploy");
+const removeQuery = require("../fauna/v10/queries/remove");
 const { ServiceError, fql } = require("fauna");
 
-class FQLXCommands {
+class FQL10Commands {
   constructor({ config, faunaClient, logger }) {
     this.config = config;
     this.client = faunaClient;
@@ -140,4 +140,4 @@ class FQLXCommands {
   }
 }
 
-module.exports = FQLXCommands;
+module.exports = FQL10Commands;

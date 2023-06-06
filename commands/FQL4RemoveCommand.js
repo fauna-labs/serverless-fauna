@@ -1,4 +1,4 @@
-const RemoveQuery = require("../fauna/RemoveQuery");
+const RemoveQuery = require("../fauna/v4/RemoveQuery");
 
 class FQL4RemoveCommand {
   constructor({ faunaClient, logger }) {
