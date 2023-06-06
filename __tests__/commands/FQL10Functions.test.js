@@ -1,80 +1,33 @@
-const FQLXCommands = require("../../commands/FQL10Commands");
+const FQL10Commands = require("../../commands/FQL10Commands");
 const { Client, fql } = require("fauna");
 const clientConfig = require("../config");
 const Logger = require("../../Logger");
+const { cleanup } = require("../utils/cleanup");
+const { verifyFunctions, verifyLogs } = require("../utils/verify");
 
 describe("FQL 10 Functions", () => {
-  let faunaClient;
+  let client;
   const log = jest.fn();
   const logger = new Logger({ log });
-
-  const cleanup = async () => {
-    let res = await faunaClient.query(fql`Function.all().map(f => f.delete())`);
-    let a = res.data?.after;
-    while (a != null) {
-      const page = await faunaClient.query(fql`Set.paginate(${a})`);
-      a = page.data?.after;
-    }
-  };
-
-  const objToArray = (obj) => {
-    return Object.entries(obj).map(([k, v]) => {
-      return {
-        name: k,
-        ...v,
-      };
-    });
-  };
-
-  const mergeMetadata = (f) => {
-    const md = {
-      created_by_serverless_plugin: "fauna:v10",
-      deletion_policy: "destroy",
-    };
-    const merged = { ...md, ...f.data };
-    return {
-      ...f,
-      data: merged,
-    };
-  };
-
-  const verify = async ({ funcs = [] }) => {
-    funcs = funcs.map(mergeMetadata).sort((a, b) => (a.name > b.name ? 1 : -1));
-
-    const actual = await faunaClient.query(fql`Function.all().order( .name )`);
-    if (funcs.length !== actual.data.data.length) {
-      expect(actual.data.data).toEqual(funcs);
-    }
-
-    for (let i = 0; i < funcs.length; i++) {
-      const e = funcs[i];
-      const a = actual.data.data[i];
-
-      expect(a.data).toEqual(e.data);
-      expect(a.name).toEqual(e.name);
-      expect(a.body).toEqual(e.body);
-      expect(a.role).toEqual(e.role);
-    }
-  };
 
   beforeAll(async () => {
     const p = clientConfig.port;
     const ep = `${clientConfig.scheme}://${clientConfig.domain}${
       p ? ":" + p : ""
     }`;
-    faunaClient = new Client({
+    client = new Client({
       secret: clientConfig.secret,
       endpoint: new URL(ep),
     });
-    await cleanup();
+    await cleanup(client);
   });
 
   beforeEach(async () => {
-    await cleanup();
+    await cleanup(client);
   });
 
   afterAll(async () => {
-    faunaClient.close();
+    client.close();
   });
 
   const prepareNFunctions = (n) => {
@@ -98,22 +51,22 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    const cmd = new FQLXCommands({
+    const cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: NoData created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("creates a single function without role", async () => {
@@ -128,22 +81,22 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    const cmd = new FQLXCommands({
+    const cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: NoRole created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("creates single function with a role", async () => {
@@ -159,22 +112,22 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    const cmd = new FQLXCommands({
+    const cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: WithRole created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("creates many functions with different properties", async () => {
@@ -204,24 +157,24 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    const cmd = new FQLXCommands({
+    const cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: WithServerRole created",
       "Function: WithAdminRole created",
       "Function: DoubleData created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("updates a function body and data", async () => {
@@ -236,9 +189,9 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
@@ -249,25 +202,25 @@ describe("FQL 10 Functions", () => {
     config.functions.ToUpdate.data["new"] = "school";
     delete config.functions.ToUpdate.data.old;
 
-    new FQLXCommands({
+    new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: ToUpdate created",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema update in progress...",
       "Function: ToUpdate updated",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("updates a function without data", async () => {
@@ -279,9 +232,9 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
@@ -290,25 +243,25 @@ describe("FQL 10 Functions", () => {
     config.functions.ToUpdateNoData.body = "_ => 'new'";
     config.functions.ToUpdateNoData["role"] = "admin";
 
-    new FQLXCommands({
+    new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: ToUpdateNoData created",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema update in progress...",
       "Function: ToUpdateNoData updated",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("removes nested data", async () => {
@@ -325,9 +278,9 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
@@ -335,31 +288,31 @@ describe("FQL 10 Functions", () => {
 
     delete config.functions.NestedUpdate.data.nest.eggs;
 
-    new FQLXCommands({
+    new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: NestedUpdate created",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema update in progress...",
       "Function: NestedUpdate updated",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
     delete config.functions.NestedUpdate.data.nest.eggs;
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("ignores resources managed by FQL 4 plugin", async () => {
     // Create a few functions
-    await faunaClient.query(
+    await client.query(
       fql`[
         Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
         Function.create({ name: "V4Like2", body: "_ => 'v4like2'", data: { created_by_serverless_plugin: "fauna:v4" }}),
@@ -374,22 +327,22 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: Managed created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    const existing = await faunaClient.query(fql`Function.all().map( .name )`);
+    const existing = await client.query(fql`Function.all().map( .name )`);
     const expected = ["Managed", "V4Like1", "V4Like2"];
     expect(existing.data.data.length).toEqual(expected.length);
     for (const e of expected) {
@@ -399,7 +352,7 @@ describe("FQL 10 Functions", () => {
 
   it("upgrades a resource be managed by the FQL X command", async () => {
     // Create a few functions
-    await faunaClient.query(
+    await client.query(
       fql`[
         Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
         Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
@@ -421,63 +374,63 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     delete config.functions.V4Like2;
-    new FQLXCommands({
+    new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: Unmanaged updated",
       "Function: V4Like1 updated",
       "Function: V4Like2 updated",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema create/update transaction in progress...",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema update in progress...",
       "Function: V4Like2 deleted",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    await verify({ funcs: objToArray(config.functions) });
+    await verifyFunctions(client, config.functions);
   });
 
   it("handles a reasonably sized config", async () => {
     const num = 50;
     const { config, names } = prepareNFunctions(num);
 
-    const cmd = new FQLXCommands({
+    const cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       ...names.map((n) => `Function: ${n} created`),
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
 
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
     const existing = [];
-    let res = await faunaClient.query(fql`Function.all().map( .name )`);
+    let res = await client.query(fql`Function.all().map( .name )`);
     existing.push(...(res.data.data ?? []));
     let after = res.data.after;
     while (after != null) {
-      res = await faunaClient.query(fql`Set.paginate(${after})`);
+      res = await client.query(fql`Set.paginate(${after})`);
       existing.push(...(res.data.data ?? []));
       after = res.data.after;
     }
@@ -487,7 +440,7 @@ describe("FQL 10 Functions", () => {
 
   it("removes only `fauna:v10` functions", async () => {
     // Create a few functions
-    await faunaClient.query(
+    await client.query(
       fql`[
         Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
         Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
@@ -506,35 +459,35 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     delete config.functions.Managed2;
-    new FQLXCommands({
+    new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: Managed1 created",
       "Function: Managed2 created",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema create/update transaction in progress...",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema update in progress...",
       "Function: Managed2 deleted",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    const existing = await faunaClient.query(fql`Function.all().map( .name )`);
+    const existing = await client.query(fql`Function.all().map( .name )`);
     const expected = ["Managed1", "Unmanaged", "V4Like1", "V4Like2"];
     expect(existing.data.data.length).toEqual(expected.length);
     for (const e of expected) {
@@ -546,45 +499,45 @@ describe("FQL 10 Functions", () => {
     const num = 50;
     const { config, names } = prepareNFunctions(num);
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
     let logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       ...names.map((n) => `Function: ${n} created`),
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
     log.mockClear();
 
     const firstKv = Object.entries(config.functions)[0];
     const nextConfig = { functions: {} };
     nextConfig.functions[firstKv[0]] = firstKv[1];
 
-    cmd = new FQLXCommands({
+    cmd = new FQL10Commands({
       config: nextConfig,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
     await cmd.deploy();
 
     logs = [
-      "FQL X schema create/update transaction in progress...",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update in progress...",
       ...names.slice(1).map((n) => `Function: ${n} deleted`),
+      "FQL 10 schema update complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
-    await verify({ funcs: objToArray(nextConfig.functions) });
+    await verifyLogs(log, logs);
+    await verifyFunctions(client, nextConfig.functions);
   });
 
   it("removes only `fauna:v10` functions with remove command", async () => {
     // Create a few functions
-    await faunaClient.query(
+    await client.query(
       fql`[
         Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
         Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
@@ -603,9 +556,9 @@ describe("FQL 10 Functions", () => {
       },
     };
 
-    let cmd = new FQLXCommands({
+    let cmd = new FQL10Commands({
       config,
-      faunaClient,
+      faunaClient: client,
       logger,
     });
 
@@ -613,17 +566,18 @@ describe("FQL 10 Functions", () => {
     await cmd.remove();
 
     const logs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: Managed1 created",
       "Function: Managed2 created",
-      "FQL X schema remove transactions in progress...",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
+      "FQL 10 schema remove in progress...",
       "Function: Managed1 deleted",
       "Function: Managed2 deleted",
+      "FQL 10 schema remove complete",
     ];
-    expect(log.mock.calls.map((c) => c[0])).toEqual(logs);
+    await verifyLogs(log, logs);
 
-    const existing = await faunaClient.query(fql`Function.all().map( .name )`);
+    const existing = await client.query(fql`Function.all().map( .name )`);
     const expected = ["Unmanaged", "V4Like1", "V4Like2"];
     expect(existing.data.data.length).toEqual(expected.length);
     for (const e of expected) {

@@ -39,12 +39,13 @@ class FQL10Commands {
   }
 
   async deploy() {
-    const { functions = {} } = this.config;
+    const { collections = {}, functions = {} } = this.config;
 
     await this.tryLog(async () => {
-      this.logger.info("FQL X schema create/update transaction in progress...");
+      this.logger.info("FQL 10 schema update in progress...");
 
-      const q = deployQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions });
+      const q = deployQuery(adapted);
       // Example expected data:
       // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
       const res = await this.client.query(q);
@@ -52,22 +53,24 @@ class FQL10Commands {
       res.data.flat().forEach((record) => {
         this.logger.success(this.buildMessage(record));
       });
-    });
 
-    await this.remove(true);
+      await this.remove(true);
+      this.logger.info("FQL 10 schema update complete");
+    });
   }
 
   async remove(withDeploy = false) {
-    let { functions = {} } = this.config;
+    let { collections = {}, functions = {} } = this.config;
 
     if (!withDeploy) {
+      this.logger.info("FQL 10 schema remove in progress...");
       functions = {};
+      collections = {};
     }
 
     await this.tryLog(async () => {
-      this.logger.info("FQL X schema remove transactions in progress...");
-
-      const q = removeQuery(this.adapt({ functions }));
+      const adapted = this.adapt({ collections, functions });
+      const q = removeQuery(adapted);
 
       const res = await this.client.query(q);
 
@@ -75,6 +78,10 @@ class FQL10Commands {
         this.logger.error(this.buildMessage(r));
       });
     });
+
+    if (!withDeploy) {
+      this.logger.info("FQL 10 schema remove complete");
+    }
   }
 
   /**
@@ -84,19 +91,47 @@ class FQL10Commands {
    *        E.g. {
    *          functions: {
    *            MyFunction: { body: "x => x + 1" }
+   *          },
+   *          collections: {
+   *            MyCollection: {}
    *          }
    *        }
    * @returns An an object containing arrays of resource definitions by resource type.
    *          E.g. {
-   *            functions: [ { name: "MyFunction", body: "x => x + 1" }]
+   *            functions: [ { name: "MyFunction", body: "x => x + 1" }],
+   *            collections: [ { name: "MyCollection" }],
    *          }
    *
    */
-  adapt({ functions = {} }) {
-    return {
-      functions: Object.entries(functions).map(([k, v]) => {
+  adapt({ collections = {}, functions = {} }) {
+    const toArray = (obj) =>
+      Object.entries(obj).map(([k, v]) => {
         return { name: k, ...v, data: this.mergeMetadata(v.data) };
+      });
+
+    return {
+      collections: toArray(collections).map((c) => {
+        c.indexes = c.indexes ?? {};
+        c.constraints = c.constraints ?? [];
+        Object.entries(c.indexes).forEach(([idxName, idxDef]) => {
+          // Default index value order to asc to make diffing easier
+          if (idxDef.values != null) {
+            c.indexes[idxName].values = idxDef.values.map((iv) => {
+              if (iv.order == null) {
+                return { order: "asc", ...iv };
+              } else {
+                return iv;
+              }
+            });
+          }
+
+          // Default queryable to true to make diffing easier
+          idxDef.queryable = idxDef.queryable ?? true;
+        });
+
+        return c;
       }),
+      functions: toArray(functions),
     };
   }
 }

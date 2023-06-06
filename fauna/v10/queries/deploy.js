@@ -1,6 +1,81 @@
 const { fql } = require("fauna");
 
 /**
+ * Constructs an FQL Query to create/update a collection according to the passed parameters.
+ *
+ * @param params The params to pass to the create or update call.
+ * @param preview A boolean indicating whether to preview or effect changes.
+ * @returns A Query. The query returns an array of results:
+ *          [{ type: "Collection", name: str, action: "created" | "updated", preview: bool}, ...]
+ */
+const createUpdateCollection = (params, preview = false) => {
+  return fql`
+  {
+    let deleteKey = (key, obj) => {
+      Object.fromEntries(Object.entries(obj).where(e => key != e[0]))
+    }
+    
+    let deleteIndexStatuses = (indexes) => {
+      Object.fromEntries(Object.entries(indexes).map(e => [e[0], deleteKey("status", e[1])]))
+    }
+    
+    let deleteConstraintStatuses = (constraints) => {
+      constraints.map(c => deleteKey("status", c))
+    }
+    
+    let p = ${params}
+    let p = p {
+      name,
+      indexes,
+      constraints,
+      data,
+    }
+   
+    if (Collection.byName(p.name) != null) {
+      let coll = Collection.byName(p.name)
+      let original = coll {
+        name,
+        indexes: deleteIndexStatuses(coll.indexes ?? {}),
+        constraints: deleteConstraintStatuses(coll.constraints ?? []),
+        data,
+      }
+      
+      if (original != p) {
+        if (${preview}) {
+          [{ type: "Collection", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]
+        } else {
+          let updated = coll.replace(p)
+          let updated = updated {
+            name,
+            indexes: deleteIndexStatuses(updated.indexes),
+            constraints: deleteConstraintStatuses(updated.constraints),
+            data,
+          }
+          [{ type: "Collection", name: p.name, action: "updated", preview: ${preview}, original: original, result: updated }]
+        }
+      } else {
+        []
+      }
+      
+    } else {
+      let created = if (${preview}) {
+        p
+      } else {
+        let c = Collection.create(p)
+        c {
+          name,
+          indexes: deleteIndexStatuses(c.indexes),
+          constraints: deleteConstraintStatuses(c.constraints),
+          data,
+        }
+      }
+
+      [{ type: "Collection", name: p.name, action: "created", preview: ${preview}, result: created }]
+    }
+  }`;
+};
+
+/**
  * Constructs an FQL Query to create/update functions according to the passed parameters.
  *
  * @param params The params to pass to the create or update call.
@@ -83,14 +158,17 @@ const createUpdateFunction = (params, preview = false) => {
  *
  * @param An object containing definitions of each type of resource. E.g.
  *        {
- *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}],
- *          "collections": not implemented,
+ *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}}],
+ *          "collections": [{"name": "MyColl"}],
  *          "roles": not implemented,
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ functions = [] }) => {
-  const queries = [...functions.map((f) => createUpdateFunction(f))];
+module.exports = ({ collections = [], functions = [] }) => {
+  const queries = [
+    ...collections.map((c) => createUpdateCollection(c)),
+    ...functions.map((f) => createUpdateFunction(f)),
+  ];
 
   // The wire protocol doesn't yet support passing an array of queries, so
   // we can manually construct the string parts.

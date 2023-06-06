@@ -57,15 +57,17 @@ const removeExcept = (module, resources, preview = false) => {
  *
  * @param An object containing arrays of resource definitions by type of resource to retain. E.g.
  *        {
- *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}],
- *          "collections": not implemented,
+ *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}}],
+ *          "collections": [{"name": "MyColl"}],
  *          "roles": not implemented,
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ functions = [] }) => {
-  const queries = [removeExcept(new Module("Function"), functions)];
-
+module.exports = ({ collections = [], functions = [] }) => {
+  const queries = [
+    removeExcept(new Module("Collection"), collections),
+    removeExcept(new Module("Function"), functions),
+  ];
   // The wire protocol doesn't yet support passing an array of queries, so
   // we can manually construct the string parts.
   const stringParts = ["[", ...queries.slice(0, -1).map((_) => ","), "]"];
