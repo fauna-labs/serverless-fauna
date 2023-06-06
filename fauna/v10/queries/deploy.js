@@ -31,7 +31,21 @@ const createUpdateCollection = (params, preview = false) => {
       data,
     }
    
-    if (Collection.byName(p.name) != null) {
+    if (Collection.byName(p.name) == null) {
+      let created = if (${preview}) {
+        p
+      } else {
+        let c = Collection.create(p)
+        c {
+          name,
+          indexes: deleteIndexStatuses(c.indexes),
+          constraints: deleteConstraintStatuses(c.constraints),
+          data,
+        }
+      }
+
+      [{ type: "Collection", name: p.name, action: "created", preview: ${preview}, result: created }]
+    } else {
       let coll = Collection.byName(p.name)
       let original = coll {
         name,
@@ -56,21 +70,6 @@ const createUpdateCollection = (params, preview = false) => {
       } else {
         []
       }
-      
-    } else {
-      let created = if (${preview}) {
-        p
-      } else {
-        let c = Collection.create(p)
-        c {
-          name,
-          indexes: deleteIndexStatuses(c.indexes),
-          constraints: deleteConstraintStatuses(c.constraints),
-          data,
-        }
-      }
-
-      [{ type: "Collection", name: p.name, action: "created", preview: ${preview}, result: created }]
     }
   }`;
 };
