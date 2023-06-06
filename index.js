@@ -76,9 +76,8 @@ class ServerlessFaunaPlugin {
     const faunaCommands = new FaunaCommands(
       this.config,
       deployCommands,
-      removeCommands: removeCommands.reverse(),
-      options: this.options,
-    });
+      removeCommands.reverse()
+    );
 
     Object.assign(this.hooks, faunaCommands.hooks);
     Object.assign(this.commands.fauna.commands, faunaCommands.command);
