@@ -1,33 +1,55 @@
-const { fql, Module } = require("fauna");
+const { fql } = require("fauna");
 
 /**
- * Constructs an FQL Query to create/update resources according to the passed parameters.
+ * Constructs an FQL Query to create/update functions according to the passed parameters.
  *
- * @param module The Module to create or update. E.g. Module("Collection")
  * @param params The params to pass to the create or update call.
- * @returns An FQL X Query. The query returns an object:
- *          { type: "Function", name: str, result: "created" | "updated" | "noop" }
+ * @param preview A boolean flag to indicate whether to mutate or just log.
+ * @returns An FQL Query. The query returns an array of results:
+ *          [{ type: "Function", name: str, action: "created" | "updated", preview: bool}, ...]
  */
-const createUpdate = (module, params) => {
+const createUpdateFunction = (params, preview = false) => {
   return fql`
   {
     let p = ${params}
-    let mod = ${module}
-    if (mod.byName(p.name) != null) {
-      let f = mod.byName(p.name)
-      if (Object.entries(p).every(v => v[1] == f[v[0]])) {
-        { type: mod.toString(), name: p.name, result: "noop" }
+    let p = p { name, body, data, role, }
+    
+    if (Function.byName(p.name) == null) {
+      let created = if (${preview}) {
+        p
       } else {
-        if (p.data != f.data) {
-          let pNullData = Object.assign(p, { data: null })
-          f.update(pNullData)
+        Function.create(p) {
+          name,
+          body,
+          data,
+          role,
         }
-        f.update(p)
-        { type: mod.toString(), name: p.name, result: "updated" }
       }
+      [{ type: "Function", name: p.name, action: "created", preview: ${preview}, result: created }]
     } else {
-      mod.create(p)
-      { type: mod.toString(), name: p.name, result: "created" }
+      let func = Function.byName(p.name)
+      let original = func {
+        name,
+        body,
+        data,
+        role,
+      }
+      
+      if (original != p) {
+        if (${preview}) {
+          [{ type: "Function", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]
+        } else {
+          let updated = func.replace(p) {
+            name,
+            body,
+            data,
+            role,
+          }
+          [{ type: "Function", name: p.name, action: "updated", preview: ${preview}, original: original, result: updated }]
+        }
+      } else {
+        []
+      }
     }
   }`;
 };
@@ -35,10 +57,10 @@ const createUpdate = (module, params) => {
 /**
  * Constructs an FQL Query used to deploy a schema in a single transaction.
  *
- * The query will be an array of individual queries returning the following contract:
+ * The query will be an array of individual queries, and will return the following contract:
  * ```
  * [
- *    { type: "Function", name: str, result: "created" | "updated" | "noop" },
+ *    [{ type: "Function", name: str, action: "created" | "updated", preview: bool}, ...],
  *    ...
  * ]
  * ```
@@ -49,14 +71,14 @@ const createUpdate = (module, params) => {
  * ```
  * {
  *   let x = 1
- *   { type: "Function", name: "", result: "noop" }
+ *   { type: "Function", name: "", action: "created" }
  * }
  * ```
  *
  * E.g. This will not work:
  * ```
  * let x = 1
- * { type: "Function", name: "", result: "noop" }
+ * { type: "Function", name: "", action: "created" }
  * ```
  *
  * @param An object containing definitions of each type of resource. E.g.
@@ -68,16 +90,12 @@ const createUpdate = (module, params) => {
  * @returns An FQL Query
  */
 module.exports = ({ functions = [] }) => {
-  const queries = [
-    ...functions.map((f) => createUpdate(new Module("Function"), f)),
-  ];
+  const queries = [...functions.map((f) => createUpdateFunction(f))];
 
-  const result = queries.reduce((prev, curr) => {
-    if (prev === null) {
-      return fql`[${curr}`;
-    }
-    return fql`${prev}, ${curr}`;
-  }, null);
+  // The wire protocol doesn't yet support passing an array of queries, so
+  // we can manually construct the string parts.
+  const stringParts = ["[", ...queries.slice(0, -1).map((_) => ","), "]"];
 
-  return fql`${result}]`;
+  // Now pass the string parts and the queries to fql(), the backing function for fql``
+  return fql(stringParts, ...queries);
 };

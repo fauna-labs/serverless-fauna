@@ -58,6 +58,11 @@ describe("Fauna deploy", () => {
     testClient = new getClient({ ...config, secret: response.secret });
   });
 
+  afterAll(async () => {
+    rootClient.close();
+    testClient.close();
+  });
+
   test(
     "initiate schema",
     async () => {

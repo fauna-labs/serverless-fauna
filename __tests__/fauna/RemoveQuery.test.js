@@ -39,6 +39,11 @@ describe("RemoveQuery", () => {
     );
   });
 
+  afterAll(async () => {
+    rootClient.close();
+    testClient.close();
+  });
+
   test("deletion_policy = retain", async () => {
     await testClient.query(
       q.Map([randomString("users"), randomString("logs")], (name) =>

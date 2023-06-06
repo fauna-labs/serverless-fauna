@@ -34,6 +34,10 @@ class FQL10Commands {
     }
   }
 
+  buildMessage(record) {
+    return `${record.type}: ${record.name} ${record.action}`;
+  }
+
   async deploy() {
     const { functions = {} } = this.config;
 
@@ -45,12 +49,8 @@ class FQL10Commands {
       // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
       const res = await this.client.query(q);
 
-      res.data.forEach((record) => {
-        if (record.result !== "noop") {
-          this.logger.success(
-            `${record.type}: ${record.name} ${record.result}`
-          );
-        }
+      res.data.flat().forEach((record) => {
+        this.logger.success(this.buildMessage(record));
       });
     });
 
@@ -64,55 +64,16 @@ class FQL10Commands {
       functions = {};
     }
 
-    /**
-     * Logs a remove record
-     *
-     * @param record A remove record E.g. { type: "function", name: "MyDeletedFunc", result: "deleted" }
-     */
-    const log = (record) => {
-      this.logger.error(`${record.type}: ${record.name} ${record.result}`);
-    };
-
-    /**
-     * Paginates a Fauna set until the after token is null and logs the results of each page.
-     *
-     * @param page A Page to paginate and log until complete.
-     * @returns {Promise<void>}
-     */
-    const paginate = async (page) => {
-      let a = page.after;
-      while (a != null) {
-        const res = await this.client.query(fql`Set.paginate(${a})`);
-
-        for (const d of res.data?.data ?? []) {
-          log(d);
-        }
-
-        a = res.data?.after;
-      }
-    };
-
     await this.tryLog(async () => {
       this.logger.info("FQL X schema remove transactions in progress...");
 
       const q = removeQuery(this.adapt({ functions }));
 
-      // Example response data:
-      // res.data -> [ Page(data={ type: "function", name: "MyDeletedFunc", result: "deleted" },after=null], ... ]
       const res = await this.client.query(q);
 
-      // Loop through array of embedded sets
-      for (const group of res.data) {
-        // Loop through each element in the set and log the record
-        for (const record of group.data ?? []) {
-          log(record);
-        }
-
-        // If there's an after token in the embedded set, we have to paginate
-        if (group.after != null) {
-          await paginate(group);
-        }
-      }
+      res.data.flat().forEach((r) => {
+        this.logger.error(this.buildMessage(r));
+      });
     });
   }
 
