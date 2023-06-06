@@ -73,8 +73,8 @@ class ServerlessFaunaPlugin {
       removeCommands.push(remove);
     }
 
-    const faunaCommands = new FaunaCommands({
-      config: this.config,
+    const faunaCommands = new FaunaCommands(
+      this.config,
       deployCommands,
       removeCommands: removeCommands.reverse(),
       options: this.options,
