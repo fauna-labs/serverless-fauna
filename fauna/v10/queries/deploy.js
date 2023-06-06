@@ -14,7 +14,19 @@ const createUpdateFunction = (params, preview = false) => {
     let p = ${params}
     let p = p { name, body, data, role, }
     
-    if (Function.byName(p.name) != null) {
+    if (Function.byName(p.name) == null) {
+      let created = if (${preview}) {
+        p
+      } else {
+        Function.create(p) {
+          name,
+          body,
+          data,
+          role,
+        }
+      }
+      [{ type: "Function", name: p.name, action: "created", preview: ${preview}, result: created }]
+    } else {
       let func = Function.byName(p.name)
       let original = func {
         name,
@@ -38,20 +50,6 @@ const createUpdateFunction = (params, preview = false) => {
       } else {
         []
       }
-
-    } else {
-      let created = if (${preview}) {
-        p
-      } else {
-        Function.create(p) {
-          name,
-          body,
-          data,
-          role,
-        }
-      }
-
-      [{ type: "Function", name: p.name, action: "created", preview: ${preview}, result: created }]
     }
   }`;
 };
