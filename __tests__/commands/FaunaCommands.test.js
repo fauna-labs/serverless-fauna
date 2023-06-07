@@ -8,6 +8,7 @@ const clientConfig = require("../config");
 const Logger = require("../../Logger");
 const getFql4Client = require("../../fauna/v4/client");
 const getFqlxClient = require("../../fauna/v10/client");
+const { cleanup } = require("../utils/cleanup");
 
 describe("FaunaCommands", () => {
   let fqlxClient;
@@ -31,10 +32,6 @@ describe("FaunaCommands", () => {
         body: "Lambda('x', Var('x'))",
       },
     },
-  };
-
-  const cleanup = async () => {
-    await fqlxClient.query(fql`Function.all().map(f => f.delete())`);
   };
 
   const verify = async (logs) => {
@@ -74,7 +71,7 @@ describe("FaunaCommands", () => {
   });
 
   beforeEach(async () => {
-    await cleanup();
+    await cleanup(fqlxClient);
   });
 
   afterAll(async () => {
