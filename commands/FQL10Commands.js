@@ -39,12 +39,12 @@ class FQL10Commands {
   }
 
   async deploy() {
-    const { collections = {}, functions = {} } = this.config;
+    const { collections = {}, functions = {}, roles = {} } = this.config;
 
     await this.tryLog(async () => {
       this.logger.info("FQL 10 schema update in progress...");
 
-      const adapted = this.adapt({ collections, functions });
+      const adapted = this.adapt({ collections, functions, roles });
       const q = deployQuery(adapted);
       // Example expected data:
       // res.data -> [ { type: "function", name: "MyFunc", result: "created" } ]
@@ -60,16 +60,17 @@ class FQL10Commands {
   }
 
   async remove(withDeploy = false) {
-    let { collections = {}, functions = {} } = this.config;
+    let { collections = {}, functions = {}, roles = {} } = this.config;
 
     if (!withDeploy) {
       this.logger.info("FQL 10 schema remove in progress...");
       functions = {};
       collections = {};
+      roles = {};
     }
 
     await this.tryLog(async () => {
-      const adapted = this.adapt({ collections, functions });
+      const adapted = this.adapt({ collections, functions, roles });
       const q = removeQuery(adapted);
 
       const res = await this.client.query(q);
@@ -94,16 +95,20 @@ class FQL10Commands {
    *          },
    *          collections: {
    *            MyCollection: {}
+   *          },
+   *          roles: {
+   *            MyRole: {}
    *          }
    *        }
    * @returns An an object containing arrays of resource definitions by resource type.
    *          E.g. {
    *            functions: [ { name: "MyFunction", body: "x => x + 1" }],
    *            collections: [ { name: "MyCollection" }],
+   *            roles: [ { name: "MyRole" }],
    *          }
    *
    */
-  adapt({ collections = {}, functions = {} }) {
+  adapt({ collections = {}, functions = {}, roles = {} }) {
     const toArray = (obj) =>
       Object.entries(obj).map(([k, v]) => {
         return { name: k, ...v, data: this.mergeMetadata(v.data) };
@@ -129,6 +134,7 @@ class FQL10Commands {
         return c;
       }),
       functions: toArray(functions),
+      roles: toArray(roles),
     };
   }
 }

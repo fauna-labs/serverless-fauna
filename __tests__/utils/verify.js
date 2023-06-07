@@ -6,7 +6,7 @@ const verifyLogs = (mockedLog, logs) => {
   mockedLog.mockClear();
 };
 
-const verifyFunctions = async (client, functions = {}) => {
+const verifyFunctions = async (client, functions) => {
   functions = objToArray(functions)
     .map(mergeDefaultMetadata)
     .sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -27,7 +27,7 @@ const verifyFunctions = async (client, functions = {}) => {
   }
 };
 
-const verifyCollections = async (client, collections = {}) => {
+const verifyCollections = async (client, collections) => {
   collections = objToArray(collections)
     .map(mergeDefaultMetadata)
     .sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -62,4 +62,30 @@ const verifyCollections = async (client, collections = {}) => {
   }
 };
 
-module.exports = { verifyCollections, verifyFunctions, verifyLogs };
+const verifyRoles = async (client, roles) => {
+  roles = objToArray(roles);
+  roles = roles
+    .map(mergeDefaultMetadata)
+    .sort((a, b) => (a.name > b.name ? 1 : -1));
+
+  const actual = await client.query(fql`Role.all().order( .name ).toArray()`);
+  if (roles.length !== actual.data.length) {
+    expect(actual.data).toEqual(roles);
+  }
+
+  for (let i = 0; i < roles.length; i++) {
+    const e = roles[i];
+    const a = actual.data[i];
+
+    expect(a.data).toEqual(e.data);
+    expect(a.membership).toEqual(e.membership);
+    expect(a.privileges).toEqual(e.privileges);
+  }
+};
+
+module.exports = {
+  verifyCollections,
+  verifyFunctions,
+  verifyLogs,
+  verifyRoles,
+};

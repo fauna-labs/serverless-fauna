@@ -142,6 +142,61 @@ const createUpdateFunction = (params, preview = false) => {
 };
 
 /**
+ * Constructs an FQL Query to create/update roles according to the passed parameters.
+ *
+ * @param params The params to pass to the create or update call.
+ * @param preview A boolean flag to indicate whether to mutate or just log.
+ * @returns An FQL Query. The query returns an array of results:
+ *          [{ type: "Role", name: str, action: "created" | "updated", preview: bool}, ...]
+ */
+const createUpdateRole = (params, preview = false) => {
+  return fql`
+  {
+    let p = ${params}
+    let p = p { name, membership, privileges, data, }
+    
+    if (Role.byName(p.name) == null) {
+      let created = if (${preview}) {
+        p
+      } else {
+        Role.create(p) {
+          name,
+          membership,
+          privileges,
+          data,
+        }
+      }
+
+      [{ type: "Role", name: p.name, action: "created", preview: ${preview}, result: created }]  
+    } else {
+      let role = Role.byName(p.name)
+      let original = role {
+        name,
+        membership,
+        privileges,
+        data,
+      }
+      
+      if (original != p) {
+        if (${preview}) {
+          [{ type: "Role", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]
+        } else {
+          let updated = role.replace(p) {
+            name,
+            membership,
+            privileges,
+            data,
+          }
+          [{ type: "Role", name: p.name, action: "updated", preview: ${preview}, original: original, result: updated }]
+        }
+      } else {
+        []
+      }
+    }
+  }`;
+};
+
+/**
  * Constructs an FQL Query used to deploy a schema in a single transaction.
  *
  * The query will be an array of individual queries, and will return the following contract:
@@ -172,14 +227,15 @@ const createUpdateFunction = (params, preview = false) => {
  *        {
  *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}}],
  *          "collections": [{"name": "MyColl"}],
- *          "roles": not implemented,
+ *          "roles": [{"name": "MyColl"}],
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ collections = [], functions = [] }) => {
+module.exports = ({ collections = [], functions = [], roles = [] }) => {
   const queries = [
     ...collections.map((c) => createUpdateCollection(c)),
     ...functions.map((f) => createUpdateFunction(f)),
+    ...roles.map((r) => createUpdateRole(r)),
   ];
 
   // The wire protocol doesn't yet support passing an array of queries, so
