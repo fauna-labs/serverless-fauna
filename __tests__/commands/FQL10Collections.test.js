@@ -70,9 +70,9 @@ describe("FQL 10 Collections", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: MyNewCollection created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -80,8 +80,8 @@ describe("FQL 10 Collections", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -96,9 +96,9 @@ describe("FQL 10 Collections", () => {
       };
       await runDeploy(newConfig);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: MyNewCollection updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, newConfig.collections);
@@ -106,9 +106,9 @@ describe("FQL 10 Collections", () => {
       // Run remove
       await runRemove(config);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Collection: MyNewCollection deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       verifyLogs(log, logs);
       await verifyNoCollections();
@@ -131,9 +131,9 @@ describe("FQL 10 Collections", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: IndexWithTerms created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -141,8 +141,8 @@ describe("FQL 10 Collections", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -153,9 +153,9 @@ describe("FQL 10 Collections", () => {
       ];
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: IndexWithTerms updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -163,9 +163,9 @@ describe("FQL 10 Collections", () => {
       // Run remove
       await runRemove(config);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Collection: IndexWithTerms deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       verifyLogs(log, logs);
       await verifyNoCollections();
@@ -187,9 +187,9 @@ describe("FQL 10 Collections", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: IndexWithValues created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -197,8 +197,8 @@ describe("FQL 10 Collections", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -209,9 +209,9 @@ describe("FQL 10 Collections", () => {
       ];
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: IndexWithValues updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       verifyLogs(log, logs);
       await verifyCollections(client, config.collections);
@@ -219,9 +219,9 @@ describe("FQL 10 Collections", () => {
       // Run remove
       await runRemove(config);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Collection: IndexWithValues deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       verifyLogs(log, logs);
       await verifyNoCollections();
@@ -240,9 +240,9 @@ describe("FQL 10 Collections", () => {
     // Run Create
     await runDeploy(config);
     let logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: CollectionWithConstraints created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     verifyLogs(log, logs);
     await verifyCollections(client, config.collections);
@@ -250,8 +250,8 @@ describe("FQL 10 Collections", () => {
     // Run Noop
     await runDeploy(config);
     logs = [
-      "FQL 10 schema update in progress...",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update in progress...",
+      "FQL v10 schema update complete",
     ];
     verifyLogs(log, logs);
     await verifyCollections(client, config.collections);
@@ -262,9 +262,9 @@ describe("FQL 10 Collections", () => {
     ];
     await runDeploy(config);
     logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: CollectionWithConstraints updated",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     verifyLogs(log, logs);
     await verifyCollections(client, config.collections);
@@ -272,9 +272,9 @@ describe("FQL 10 Collections", () => {
     // Run remove
     await runRemove(config);
     logs = [
-      "FQL 10 schema remove in progress...",
+      "FQL v10 schema remove in progress...",
       "Collection: CollectionWithConstraints deleted",
-      "FQL 10 schema remove complete",
+      "FQL v10 schema remove complete",
     ];
     verifyLogs(log, logs);
     await verifyNoCollections();

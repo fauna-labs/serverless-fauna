@@ -83,9 +83,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.deploy();
 
     const expectedLogs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: FQLXFunc created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
       "Schema updating in process...",
       "function `FQL4Func` was created",
     ];
@@ -99,9 +99,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.remove();
     const expectedLogs = [
       'Resource Function("FQL4Func") deleted',
-      "FQL 10 schema remove in progress...",
+      "FQL v10 schema remove in progress...",
       "Function: FQLXFunc deleted",
-      "FQL 10 schema remove complete",
+      "FQL v10 schema remove complete",
     ];
 
     await verify(expectedLogs);
@@ -111,9 +111,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.deployFqlx();
 
     const expectedLogs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: FQLXFunc created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
 
     await verify(expectedLogs);
@@ -124,9 +124,9 @@ describe("FaunaCommands", () => {
     log.mockClear();
     await faunaCommands.removeFqlx();
     const expectedLogs = [
-      "FQL 10 schema remove in progress...",
+      "FQL v10 schema remove in progress...",
       "Function: FQLXFunc deleted",
-      "FQL 10 schema remove complete",
+      "FQL v10 schema remove complete",
     ];
 
     await verify(expectedLogs);

@@ -70,9 +70,9 @@ describe("FQL 10 Roles", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Role: MyRole created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -80,8 +80,8 @@ describe("FQL 10 Roles", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -96,9 +96,9 @@ describe("FQL 10 Roles", () => {
       };
       await runDeploy(newConfig);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Role: MyRole updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, newConfig.roles);
@@ -106,9 +106,9 @@ describe("FQL 10 Roles", () => {
       // Run remove
       await runRemove(config);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Role: MyRole deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       await verifyLogs(log, logs);
       await verifyNoRoles();
@@ -146,11 +146,11 @@ describe("FQL 10 Roles", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: MyColl created",
         "Function: MyFunc created",
         "Role: PrivilegedRole created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -158,8 +158,8 @@ describe("FQL 10 Roles", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -200,9 +200,9 @@ describe("FQL 10 Roles", () => {
       };
       await runDeploy(newConfig);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Role: PrivilegedRole updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, newConfig.roles);
@@ -210,11 +210,11 @@ describe("FQL 10 Roles", () => {
       // Run remove
       await runRemove(newConfig);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Collection: MyColl deleted",
         "Function: MyFunc deleted",
         "Role: PrivilegedRole deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       await verifyLogs(log, logs);
       await verifyNoRoles();
@@ -241,11 +241,11 @@ describe("FQL 10 Roles", () => {
       // Run create
       await runDeploy(config);
       let logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Collection: Users created",
         "Collection: Sites created",
         "Role: MembershipRole created",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -253,8 +253,8 @@ describe("FQL 10 Roles", () => {
       // Run noop
       await runDeploy(config);
       logs = [
-        "FQL 10 schema update in progress...",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, config.roles);
@@ -282,9 +282,9 @@ describe("FQL 10 Roles", () => {
 
       await runDeploy(newConfig);
       logs = [
-        "FQL 10 schema update in progress...",
+        "FQL v10 schema update in progress...",
         "Role: MembershipRole updated",
-        "FQL 10 schema update complete",
+        "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
       await verifyRoles(client, newConfig.roles);
@@ -292,11 +292,11 @@ describe("FQL 10 Roles", () => {
       // Run remove
       await runRemove(newConfig);
       logs = [
-        "FQL 10 schema remove in progress...",
+        "FQL v10 schema remove in progress...",
         "Collection: Sites deleted",
         "Collection: Users deleted",
         "Role: MembershipRole deleted",
-        "FQL 10 schema remove complete",
+        "FQL v10 schema remove complete",
       ];
       await verifyLogs(log, logs);
       await verifyNoRoles();

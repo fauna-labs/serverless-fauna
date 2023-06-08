@@ -143,11 +143,11 @@ describe("FQL 10 Common", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: NestedUpdateColl updated",
       "Function: NestedUpdateFunc updated",
       "Role: NestedUpdateRole updated",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     await verifyFunctions(client, config.functions);
@@ -181,11 +181,11 @@ describe("FQL 10 Common", () => {
 
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: CollectionV10 created",
       "Function: FunctionV10 created",
       "Role: RoleV10 created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -238,14 +238,14 @@ describe("FQL 10 Common", () => {
 
     await runDeploy(config);
     let logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: CollectionUnmanaged updated",
       "Collection: CollectionV4 updated",
       "Function: FunctionUnmanaged updated",
       "Function: FunctionV4 updated",
       "Role: RoleUnmanaged updated",
       "Role: RoleV4 updated",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -255,11 +255,11 @@ describe("FQL 10 Common", () => {
     await runDeploy(config);
 
     logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: CollectionUnmanaged deleted",
       "Function: FunctionV4 deleted",
       "Role: RoleV4 deleted",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -274,11 +274,11 @@ describe("FQL 10 Common", () => {
 
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.map((n) => `Collection: ${n} created`),
       ...names.functions.map((n) => `Function: ${n} created`),
       ...names.roles.map((n) => `Role: ${n} created`),
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -327,11 +327,11 @@ describe("FQL 10 Common", () => {
     delete config.roles.Role2;
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: Coll2 deleted",
       "Function: Func2 deleted",
       "Role: Role2 deleted",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     verifyLogs(log, logs);
 
@@ -359,11 +359,11 @@ describe("FQL 10 Common", () => {
 
     await runDeploy(config);
     let logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.map((n) => `Collection: ${n} created`),
       ...names.functions.map((n) => `Function: ${n} created`),
       ...names.roles.map((n) => `Role: ${n} created`),
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     log.mockClear();
@@ -380,11 +380,11 @@ describe("FQL 10 Common", () => {
     await runDeploy(nextConfig);
 
     logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.slice(1).map((n) => `Collection: ${n} deleted`),
       ...names.functions.slice(1).map((n) => `Function: ${n} deleted`),
       ...names.roles.slice(1).map((n) => `Role: ${n} deleted`),
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     await verifyFunctions(client, nextConfig.functions);
@@ -424,11 +424,11 @@ describe("FQL 10 Common", () => {
     await runRemove(config);
 
     const logs = [
-      "FQL 10 schema remove in progress...",
+      "FQL v10 schema remove in progress...",
       "Collection: CollectionV10 deleted",
       "Function: FunctionV10 deleted",
       "Role: RoleV10 deleted",
-      "FQL 10 schema remove complete",
+      "FQL v10 schema remove complete",
     ];
     await verifyLogs(log, logs);
 

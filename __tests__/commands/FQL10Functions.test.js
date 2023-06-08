@@ -53,9 +53,9 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: NoData created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -77,9 +77,9 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: NoRole created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -102,9 +102,9 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: WithRole created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -141,11 +141,11 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: WithServerRole created",
       "Function: WithAdminRole created",
       "Function: DoubleData created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -175,9 +175,9 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: ToUpdate updated",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -201,9 +201,9 @@ describe("FQL 10 Functions", () => {
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Function: ToUpdateNoData updated",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 

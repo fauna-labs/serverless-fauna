@@ -42,7 +42,7 @@ class FQL10Commands {
     const { collections = {}, functions = {}, roles = {} } = this.config;
 
     await this.tryLog(async () => {
-      this.logger.info("FQL 10 schema update in progress...");
+      this.logger.info("FQL v10 schema update in progress...");
 
       const adapted = this.adapt({ collections, functions, roles });
       const q = deployQuery(adapted);
@@ -55,7 +55,7 @@ class FQL10Commands {
       });
 
       await this.remove(true);
-      this.logger.info("FQL 10 schema update complete");
+      this.logger.info("FQL v10 schema update complete");
     });
   }
 
@@ -63,7 +63,7 @@ class FQL10Commands {
     let { collections = {}, functions = {}, roles = {} } = this.config;
 
     if (!withDeploy) {
-      this.logger.info("FQL 10 schema remove in progress...");
+      this.logger.info("FQL v10 schema remove in progress...");
       functions = {};
       collections = {};
       roles = {};
@@ -81,7 +81,7 @@ class FQL10Commands {
     });
 
     if (!withDeploy) {
-      this.logger.info("FQL 10 schema remove complete");
+      this.logger.info("FQL v10 schema remove complete");
     }
   }
 
