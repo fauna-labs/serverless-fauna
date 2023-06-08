@@ -1,5 +1,6 @@
 const clientProp = require("./client");
 const functionProp = require("./function");
+const collectionProp = require("./collection");
 
 module.exports = {
   type: "object",
@@ -12,6 +13,12 @@ module.exports = {
       type: "object",
       patternProperties: {
         ".*": functionProp,
+      },
+    },
+    collections: {
+      type: "object",
+      patternProperties: {
+        ".*": collectionProp,
       },
     },
   },

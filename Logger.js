@@ -1,7 +1,8 @@
 function Logger(cli) {
   const entity = "Fauna";
   const levelColor = {
-    info: "yellow",
+    warn: "yellow",
+    info: "white",
     error: "red",
     success: "green",
   };

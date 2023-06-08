@@ -8,6 +8,7 @@ const clientConfig = require("../config");
 const Logger = require("../../Logger");
 const getFql4Client = require("../../fauna/v4/client");
 const getFqlxClient = require("../../fauna/v10/client");
+const { cleanup } = require("../utils/cleanup");
 
 describe("FaunaCommands", () => {
   let fqlxClient;
@@ -31,10 +32,6 @@ describe("FaunaCommands", () => {
         body: "Lambda('x', Var('x'))",
       },
     },
-  };
-
-  const cleanup = async () => {
-    await fqlxClient.query(fql`Function.all().map(f => f.delete())`);
   };
 
   const verify = async (logs) => {
@@ -74,7 +71,7 @@ describe("FaunaCommands", () => {
   });
 
   beforeEach(async () => {
-    await cleanup();
+    await cleanup(fqlxClient);
   });
 
   afterAll(async () => {
@@ -86,9 +83,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.deploy();
 
     const expectedLogs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: FQLXFunc created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
       "Schema updating in process...",
       "function `FQL4Func` was created",
     ];
@@ -102,8 +99,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.remove();
     const expectedLogs = [
       'Resource Function("FQL4Func") deleted',
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema remove in progress...",
       "Function: FQLXFunc deleted",
+      "FQL 10 schema remove complete",
     ];
 
     await verify(expectedLogs);
@@ -113,9 +111,9 @@ describe("FaunaCommands", () => {
     await faunaCommands.deployFqlx();
 
     const expectedLogs = [
-      "FQL X schema create/update transaction in progress...",
+      "FQL 10 schema update in progress...",
       "Function: FQLXFunc created",
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema update complete",
     ];
 
     await verify(expectedLogs);
@@ -126,8 +124,9 @@ describe("FaunaCommands", () => {
     log.mockClear();
     await faunaCommands.removeFqlx();
     const expectedLogs = [
-      "FQL X schema remove transactions in progress...",
+      "FQL 10 schema remove in progress...",
       "Function: FQLXFunc deleted",
+      "FQL 10 schema remove complete",
     ];
 
     await verify(expectedLogs);
