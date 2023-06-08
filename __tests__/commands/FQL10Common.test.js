@@ -286,7 +286,7 @@ describe("FQL 10 Common", () => {
     expect(existing.length).toEqual(
       Object.values(names).reduce((p, c) => p + c.length, 0)
     );
-  });
+  }, 10_000);
 
   it("deploy removes only `fauna:v10` resources", async () => {
     await client.query(
@@ -354,7 +354,7 @@ describe("FQL 10 Common", () => {
   });
 
   it("deploy removes many `fauna:v10` resources", async () => {
-    const num = 50;
+    const num = 100;
     const { config, names } = prepareNOfEachResource(num);
 
     await runDeploy(config);
@@ -390,7 +390,7 @@ describe("FQL 10 Common", () => {
     await verifyFunctions(client, nextConfig.functions);
     await verifyCollections(client, nextConfig.collections);
     await verifyRoles(client, nextConfig.roles);
-  });
+  }, 10_000);
 
   it("removes only `fauna:v10` resources with remove command", async () => {
     // Create a few functions
