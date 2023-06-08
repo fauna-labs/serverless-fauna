@@ -7,7 +7,7 @@ const { fql, Module } = require("fauna");
  * @param module
  * @param resources An array of definitions that should be excluded from removal.
  * @param preview A boolean flag to indicate whether to remove or just log.
- * @returns A Query that deletes resources managed by this plugin. The query returns an array of arrays
+ * @returns A Query that deletes resources managed by this plugin. The query returns an array of results.
  *          E.g. [{ type: "Function", name: "MyDeletedFunc", action: "deleted", preview: false}, ...]
  */
 const removeExcept = (module, resources, preview = false) => {
@@ -59,14 +59,15 @@ const removeExcept = (module, resources, preview = false) => {
  *        {
  *          "functions": [{"name": "MyFunc", "body": "_ => 1", "role": "admin", "data": {"meta": "some metadata"}}],
  *          "collections": [{"name": "MyColl"}],
- *          "roles": not implemented,
+ *          "roles": [{"name": "MyRole"}],
  *        }
  * @returns An FQL Query
  */
-module.exports = ({ collections = [], functions = [] }) => {
+module.exports = ({ collections = [], functions = [], roles = [] }) => {
   const queries = [
     removeExcept(new Module("Collection"), collections),
     removeExcept(new Module("Function"), functions),
+    removeExcept(new Module("Role"), roles),
   ];
   // The wire protocol doesn't yet support passing an array of queries, so
   // we can manually construct the string parts.

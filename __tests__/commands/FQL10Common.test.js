@@ -7,6 +7,7 @@ const {
   verifyFunctions,
   verifyLogs,
   verifyCollections,
+  verifyRoles,
 } = require("../utils/verify");
 
 describe("FQL 10 Common", () => {
@@ -18,28 +19,42 @@ describe("FQL 10 Common", () => {
     const res = await client.query(fql`
     let colls = Collection.all().toArray().map( .name )
     let funcs = Function.all().toArray().map( .name )
-    colls.concat(funcs)
+    let roles = Role.all().toArray().map( .name )
+    colls.concat(funcs).concat(roles)
     `);
     return res.data;
   };
 
-  const prepareNResources = (n) => {
-    const config = { functions: {}, collections: {} };
+  const prepareNOfEachResource = (n) => {
+    const config = { functions: {}, collections: {}, roles: {} };
     const names = {
       functions: [],
       collections: [],
+      roles: [],
+    };
+
+    const pad = (i) => {
+      if (i < 10) {
+        return "00" + i;
+      } else if (i < 100) {
+        return "0" + i;
+      } else {
+        return `${i}`;
+      }
     };
 
     for (let i = 1; i <= n; i++) {
-      const padded = `${i < 10 ? "0" + i : i}`;
-
-      const f = `Func${padded}`;
+      const f = `Func${pad(i)}`;
       config.functions[f] = { body: `_ => ${i}` };
       names.functions.push(f);
 
-      const c = `Coll${padded}`;
+      const c = `Coll${pad(i)}`;
       config.collections[c] = {};
       names.collections.push(c);
+
+      const r = `Role${pad(i)}`;
+      config.roles[r] = {};
+      names.roles.push(r);
     }
     return { config, names };
   };
@@ -74,6 +89,7 @@ describe("FQL 10 Common", () => {
     client = new Client({
       secret: clientConfig.secret,
       endpoint: new URL(ep),
+      query_timeout_ms: 10_000,
     });
     await cleanup(client);
   });
@@ -107,6 +123,15 @@ describe("FQL 10 Common", () => {
           },
         },
       },
+      roles: {
+        NestedUpdateRole: {
+          data: {
+            nest: {
+              eggs: 1,
+            },
+          },
+        },
+      },
     };
 
     await runDeploy(config);
@@ -114,116 +139,146 @@ describe("FQL 10 Common", () => {
 
     delete config.functions.NestedUpdateFunc.data.nest.eggs;
     delete config.collections.NestedUpdateColl.data.nest.eggs;
+    delete config.roles.NestedUpdateRole.data.nest.eggs;
     await runDeploy(config);
 
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: NestedUpdateColl updated",
       "Function: NestedUpdateFunc updated",
-      "FQL 10 schema update complete",
+      "Role: NestedUpdateRole updated",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     await verifyFunctions(client, config.functions);
     await verifyCollections(client, config.collections);
+    await verifyRoles(client, config.roles);
   });
 
   it("ignores resources managed by FQL 4 plugin", async () => {
     // Create a few functions
     await client.query(
       fql`[
-        Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
-        Collection.create({ name: "V4Like1Coll", data: { created_by_serverless_plugin: true }}),
+        Function.create({ name: "FunctionV4", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Collection.create({ name: "CollectionV4", data: { created_by_serverless_plugin: true }}),
+        Role.create({ name: "RoleV4", data: { created_by_serverless_plugin: true }}),
       ]`
     );
 
     const config = {
       functions: {
-        Managed: {
+        FunctionV10: {
           body: "_ => 'managed'",
         },
       },
       collections: {
-        ManagedColl: {},
+        CollectionV10: {},
+      },
+      roles: {
+        RoleV10: {},
       },
     };
 
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
-      "Collection: ManagedColl created",
-      "Function: Managed created",
-      "FQL 10 schema update complete",
+      "FQL v10 schema update in progress...",
+      "Collection: CollectionV10 created",
+      "Function: FunctionV10 created",
+      "Role: RoleV10 created",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
     const existing = await getExistingResourceNames();
-    const expected = ["ManagedColl", "V4Like1Coll", "Managed", "V4Like1"];
+    const expected = [
+      "CollectionV10",
+      "CollectionV4",
+      "FunctionV10",
+      "FunctionV4",
+      "RoleV10",
+      "RoleV4",
+    ];
     expect(existing.length).toEqual(expected.length);
     for (const e of expected) {
       expect(existing).toContain(e);
     }
   });
 
-  it("upgrades a resource be managed by the FQL v10 plugin", async () => {
+  it("upgrades a resource to be managed by the FQL v10 plugin", async () => {
     // Create a few functions
     await client.query(
       fql`[
-        Collection.create({ name: "UnmanagedColl"}),
-        Collection.create({ name: "V4Like1Coll", data: { created_by_serverless_plugin: true }}),
-        Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
-        Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Collection.create({ name: "CollectionUnmanaged"}),
+        Collection.create({ name: "CollectionV4", data: { created_by_serverless_plugin: true }}),
+        Function.create({ name: "FunctionUnmanaged", body: "_ => 'unmanaged'" }),
+        Function.create({ name: "FunctionV4", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Role.create({ name: "RoleUnmanaged"}),
+        Role.create({ name: "RoleV4", data: { created_by_serverless_plugin: true }}),
       ]`
     );
 
     const config = {
       functions: {
-        Unmanaged: {
+        FunctionUnmanaged: {
           body: "_ => 'unmanaged'",
         },
-        V4Like1: {
+        FunctionV4: {
           body: "_ => 'v4like1'",
         },
       },
       collections: {
-        UnmanagedColl: {},
-        V4Like1Coll: {},
+        CollectionUnmanaged: {},
+        CollectionV4: {},
+      },
+      roles: {
+        RoleUnmanaged: {},
+        RoleV4: {},
       },
     };
 
     await runDeploy(config);
+    let logs = [
+      "FQL v10 schema update in progress...",
+      "Collection: CollectionUnmanaged updated",
+      "Collection: CollectionV4 updated",
+      "Function: FunctionUnmanaged updated",
+      "Function: FunctionV4 updated",
+      "Role: RoleUnmanaged updated",
+      "Role: RoleV4 updated",
+      "FQL v10 schema update complete",
+    ];
+    await verifyLogs(log, logs);
 
-    delete config.functions.V4Like1;
-    delete config.collections.UnmanagedColl;
+    delete config.functions.FunctionV4;
+    delete config.collections.CollectionUnmanaged;
+    delete config.roles.RoleV4;
     await runDeploy(config);
 
-    const logs = [
-      "FQL 10 schema update in progress...",
-      "Collection: UnmanagedColl updated",
-      "Collection: V4Like1Coll updated",
-      "Function: Unmanaged updated",
-      "Function: V4Like1 updated",
-      "FQL 10 schema update complete",
-      "FQL 10 schema update in progress...",
-      "Collection: UnmanagedColl deleted",
-      "Function: V4Like1 deleted",
-      "FQL 10 schema update complete",
+    logs = [
+      "FQL v10 schema update in progress...",
+      "Collection: CollectionUnmanaged deleted",
+      "Function: FunctionV4 deleted",
+      "Role: RoleV4 deleted",
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
     await verifyFunctions(client, config.functions);
     await verifyCollections(client, config.collections);
+    await verifyRoles(client, config.roles);
   });
 
   it("handles a reasonably sized config", async () => {
-    const num = 50;
-    const { config, names } = prepareNResources(num);
+    const num = 100;
+    const { config, names } = prepareNOfEachResource(num);
 
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.map((n) => `Collection: ${n} created`),
       ...names.functions.map((n) => `Function: ${n} created`),
-      "FQL 10 schema update complete",
+      ...names.roles.map((n) => `Role: ${n} created`),
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
 
@@ -231,15 +286,17 @@ describe("FQL 10 Common", () => {
     expect(existing.length).toEqual(
       Object.values(names).reduce((p, c) => p + c.length, 0)
     );
-  });
+  }, 10_000);
 
   it("deploy removes only `fauna:v10` resources", async () => {
     await client.query(
       fql`[
-        Collection.create({ name: "UnmanagedColl"}),
-        Collection.create({ name: "V4Like1Coll", data: { created_by_serverless_plugin: true }}),
-        Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
-        Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Collection.create({ name: "CollectionUnmanaged"}),
+        Collection.create({ name: "CollectionV4", data: { created_by_serverless_plugin: true }}),
+        Function.create({ name: "FunctionUnmanaged", body: "_ => 'unmanaged'" }),
+        Function.create({ name: "FunctionV4", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Role.create({ name: "RoleUnmanaged"}),
+        Role.create({ name: "RoleV4", data: { created_by_serverless_plugin: true }}),
       ]`
     );
 
@@ -256,6 +313,10 @@ describe("FQL 10 Common", () => {
         Coll1: {},
         Coll2: {},
       },
+      roles: {
+        Role1: {},
+        Role2: {},
+      },
     };
 
     await runDeploy(config);
@@ -263,23 +324,28 @@ describe("FQL 10 Common", () => {
 
     delete config.collections.Coll2;
     delete config.functions.Func2;
+    delete config.roles.Role2;
     await runDeploy(config);
     const logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       "Collection: Coll2 deleted",
       "Function: Func2 deleted",
-      "FQL 10 schema update complete",
+      "Role: Role2 deleted",
+      "FQL v10 schema update complete",
     ];
     verifyLogs(log, logs);
 
     const existing = await getExistingResourceNames();
     const expected = [
-      "UnmanagedColl",
-      "V4Like1Coll",
+      "CollectionUnmanaged",
+      "CollectionV4",
       "Coll1",
-      "Unmanaged",
-      "V4Like1",
+      "FunctionUnmanaged",
+      "FunctionV4",
       "Func1",
+      "RoleUnmanaged",
+      "RoleV4",
+      "Role1",
     ];
     expect(existing.length).toEqual(expected.length);
     for (const e of expected) {
@@ -288,57 +354,68 @@ describe("FQL 10 Common", () => {
   });
 
   it("deploy removes many `fauna:v10` resources", async () => {
-    const num = 50;
-    const { config, names } = prepareNResources(num);
+    const num = 100;
+    const { config, names } = prepareNOfEachResource(num);
 
     await runDeploy(config);
     let logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.map((n) => `Collection: ${n} created`),
       ...names.functions.map((n) => `Function: ${n} created`),
-      "FQL 10 schema update complete",
+      ...names.roles.map((n) => `Role: ${n} created`),
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     log.mockClear();
 
     const firstFunc = Object.entries(config.functions)[0];
     const firstColl = Object.entries(config.collections)[0];
-    const nextConfig = { functions: {}, collections: {} };
+    const firstRole = Object.entries(config.roles)[0];
+
+    const nextConfig = { functions: {}, collections: {}, roles: {} };
     nextConfig.functions[firstFunc[0]] = firstFunc[1];
     nextConfig.collections[firstColl[0]] = firstColl[1];
+    nextConfig.roles[firstRole[0]] = firstRole[1];
 
     await runDeploy(nextConfig);
 
     logs = [
-      "FQL 10 schema update in progress...",
+      "FQL v10 schema update in progress...",
       ...names.collections.slice(1).map((n) => `Collection: ${n} deleted`),
       ...names.functions.slice(1).map((n) => `Function: ${n} deleted`),
-      "FQL 10 schema update complete",
+      ...names.roles.slice(1).map((n) => `Role: ${n} deleted`),
+      "FQL v10 schema update complete",
     ];
     await verifyLogs(log, logs);
     await verifyFunctions(client, nextConfig.functions);
     await verifyCollections(client, nextConfig.collections);
-  });
+    await verifyRoles(client, nextConfig.roles);
+  }, 10_000);
 
   it("removes only `fauna:v10` resources with remove command", async () => {
     // Create a few functions
     await client.query(
       fql`[
-        Collection.create({ name: "UnmanagedColl"}),
-        Collection.create({ name: "V4Like1Coll", data: { created_by_serverless_plugin: true }}),
-        Function.create({ name: "Unmanaged", body: "_ => 'unmanaged'" }),
-        Function.create({ name: "V4Like1", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Collection.create({ name: "CollectionUnmanaged"}),
+        Collection.create({ name: "CollectionV4", data: { created_by_serverless_plugin: true }}),
+        Function.create({ name: "FunctionUnmanaged", body: "_ => 'unmanaged'" }),
+        Function.create({ name: "FunctionV4", body: "_ => 'v4like1'", data: { created_by_serverless_plugin: true }}),
+        Role.create({ name: "RoleUnmanaged"}),
+        Role.create({ name: "RoleV4", data: { created_by_serverless_plugin: true }}),
       ]`
     );
 
     const config = {
       collections: {
-        Managed2: {},
+        CollectionV10: {},
       },
       functions: {
-        Managed1: {
+        FunctionV10: {
           body: "_ => 1",
         },
+      },
+      roles: {
+        RoleV10: {},
       },
     };
 
@@ -347,15 +424,23 @@ describe("FQL 10 Common", () => {
     await runRemove(config);
 
     const logs = [
-      "FQL 10 schema remove in progress...",
-      "Collection: Managed2 deleted",
-      "Function: Managed1 deleted",
-      "FQL 10 schema remove complete",
+      "FQL v10 schema remove in progress...",
+      "Collection: CollectionV10 deleted",
+      "Function: FunctionV10 deleted",
+      "Role: RoleV10 deleted",
+      "FQL v10 schema remove complete",
     ];
     await verifyLogs(log, logs);
 
     const existing = await getExistingResourceNames();
-    const expected = ["UnmanagedColl", "V4Like1Coll", "Unmanaged", "V4Like1"];
+    const expected = [
+      "CollectionUnmanaged",
+      "CollectionV4",
+      "FunctionUnmanaged",
+      "FunctionV4",
+      "RoleUnmanaged",
+      "RoleV4",
+    ];
     expect(existing.length).toEqual(expected.length);
     for (const e of expected) {
       expect(existing).toContain(e);
