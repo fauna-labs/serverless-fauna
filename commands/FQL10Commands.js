@@ -124,9 +124,6 @@ class FQL10Commands {
               }
             });
           }
-
-          // Default queryable to true to make diffing easier
-          idxDef.queryable = idxDef.queryable ?? true;
         });
 
         return c;

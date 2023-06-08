@@ -45,6 +45,10 @@ const verifyCollections = async (client, collections = {}) => {
     Object.keys(a.indexes).forEach((k) => {
       // Remove status because it's not managed by the user
       delete a.indexes[k].status;
+
+      if (e.indexes[k].queryable === undefined) {
+        delete a.indexes[k].queryable;
+      }
     });
 
     a.constraints.forEach((c) => {

@@ -15,11 +15,24 @@ const createUpdateCollection = (params, preview = false) => {
       Object.fromEntries(Object.entries(obj).where(e => key != e[0]))
     }
     
-    let deleteIndexStatuses = (indexes) => {
-      Object.fromEntries(Object.entries(indexes).map(e => [e[0], deleteKey("status", e[1])]))
+    let cleanIndexes = (realIndexes, paramsIndexes) => {
+      Object.fromEntries(Object.entries(realIndexes).map(e => {
+        // Always remove status because users don't set it
+        let newValue = deleteKey("status", e[1])
+        
+        // The queryable prop is always returned on an index, so remove it unless it's on params
+        let newValue = if (paramsIndexes != null && paramsIndexes[e[0]] != null && paramsIndexes[e[0]].queryable == null) {
+          deleteKey("queryable", newValue)
+        } else {
+          newValue
+        }
+        
+        [e[0], newValue]
+      }))
     }
     
     let deleteConstraintStatuses = (constraints) => {
+      // Always remove status because users don't set it
       constraints.map(c => deleteKey("status", c))
     }
     
@@ -38,7 +51,7 @@ const createUpdateCollection = (params, preview = false) => {
         let c = Collection.create(p)
         c {
           name,
-          indexes: deleteIndexStatuses(c.indexes),
+          indexes: cleanIndexes(c.indexes, p.indexes),
           constraints: deleteConstraintStatuses(c.constraints),
           data,
         }
@@ -49,7 +62,7 @@ const createUpdateCollection = (params, preview = false) => {
       let coll = Collection.byName(p.name)
       let original = coll {
         name,
-        indexes: deleteIndexStatuses(coll.indexes ?? {}),
+        indexes: cleanIndexes(coll.indexes ?? {}, p.indexes),
         constraints: deleteConstraintStatuses(coll.constraints ?? []),
         data,
       }
@@ -61,7 +74,7 @@ const createUpdateCollection = (params, preview = false) => {
           let updated = coll.replace(p)
           let updated = updated {
             name,
-            indexes: deleteIndexStatuses(updated.indexes),
+            indexes: cleanIndexes(updated.indexes, p.indexes),
             constraints: deleteConstraintStatuses(updated.constraints),
             data,
           }

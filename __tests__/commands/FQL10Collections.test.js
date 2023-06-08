@@ -121,6 +121,7 @@ describe("FQL 10 Collections", () => {
             indexes: {
               byName: {
                 terms: [{ field: "name" }],
+                queryable: true,
               },
             },
           },
