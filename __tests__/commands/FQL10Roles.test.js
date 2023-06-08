@@ -138,6 +138,12 @@ describe("FQL 10 Roles", () => {
                   history_write: true,
                 },
               },
+              {
+                resource: "MyFunc",
+                actions: {
+                  call: true,
+                },
+              },
             ],
           },
         },
@@ -170,7 +176,7 @@ describe("FQL 10 Roles", () => {
           MyColl: {},
         },
         functions: {
-          MyFunc: {
+          MyFunc2: {
             body: "_ => 1",
           },
         },
@@ -189,7 +195,7 @@ describe("FQL 10 Roles", () => {
                 },
               },
               {
-                resource: "MyFunc",
+                resource: "MyFunc2",
                 actions: {
                   call: true,
                 },
@@ -201,7 +207,9 @@ describe("FQL 10 Roles", () => {
       await runDeploy(newConfig);
       logs = [
         "FQL v10 schema update in progress...",
+        "Function: MyFunc2 created",
         "Role: PrivilegedRole updated",
+        "Function: MyFunc deleted",
         "FQL v10 schema update complete",
       ];
       await verifyLogs(log, logs);
@@ -212,7 +220,7 @@ describe("FQL 10 Roles", () => {
       logs = [
         "FQL v10 schema remove in progress...",
         "Collection: MyColl deleted",
-        "Function: MyFunc deleted",
+        "Function: MyFunc2 deleted",
         "Role: PrivilegedRole deleted",
         "FQL v10 schema remove complete",
       ];
