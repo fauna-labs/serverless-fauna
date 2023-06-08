@@ -33,7 +33,7 @@ module.exports = {
               delete: { type: "boolean" },
               history_read: { type: "boolean" },
               history_write: { type: "boolean" },
-              call: { type: "boolean" },
+              call: {},
             },
           },
         },
