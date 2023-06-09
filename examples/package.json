@@ -5,6 +5,7 @@
     "help": "sls fauna --help -c serverless-v10.yml && sls fauna deploy --help -c serverless-v10.yml && sls fauna remove --help -c serverless-v10.yml"
   },
   "devDependencies": {
-    "@fauna-labs/serverless-fauna": "file:../"
+    "@fauna-labs/serverless-fauna": "file:../",
+    "serverless": "^3.32.2"
   }
 }
