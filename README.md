@@ -36,69 +36,106 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet. Minor version releases may still contain breaking changes. If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file. For example, `"~0.2.0"` or `"~0.1.6"`
 
-## FQL X (beta)
+## FQL v10 (beta)
 
-To specify FQL X resources in serverless-fauna, you must declare them under the top-level property `fqlx`. The `sls fauna deploy` and `remove` commands will run both FQL 4 and FQL X resources declared in the same file.
+FQL v10 resources follow a different schema than v4. As such, you must declare your v4 and v10 resources in separate files. Specify a v10 schema by setting `version: 10`, like so:
 
-To run only FQL X or 4 resources, use `sls fauna fqlx|fql4 deploy` or `sls fauna fqlx|fql4 remove`.
+```
+plugins:
+  - "@fauna-labs/serverless-fauna"
 
-### Supported FQL X Resources
+fauna:
+  version: 10
+  client:
+    secret: ${env:FAUNA_SECRET}
+    endpoint: ${env:FAUNA_ENDPOINT}
 
-- Functions
+  collections:
+    MyCollection:
+      indexes:
+        MyIndex:
+          terms:
+            - field: name
+          values:
+            - field: name
+              order: asc
+
+  functions:
+    MyFunction:
+      body: |
+        x => x + 1
+
+  roles:
+    MyRole:
+      privileges:
+        - resource: MyFunction
+          actions:
+            call: true
+        - resource: MyCollection
+          actions:
+            read: x => x.category == "pets"
+```
+
+You still use `sls fauna deploy` and `remove` commands to create, update and destroy this schema.
+
+### Supported FQL v10 Resources
+
+- [Functions](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/schema_entities/function/document_definition)
+- [Collections with indexes and constraints](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/schema_entities/collection/document_definition)
+- [Roles](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/auth/role/document_definition)
 
 ### Notable Differences
 
 - You don't declare a separate `name` property on your config. Instead, the key is used as the name.
 - Create and Update actions during a deploy command are handled in a single transaction. If for some reason your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
-- Destruction of resources during a deploy command is handled as separate transaction(s) following any creates and updates. This may occur in several transactions through pagination.
+- Destruction of resources during a deploy command is handled as a separate single transaction following creates/updates.
 
-### Configuration for FQL X
+### Migrating to FQL v10
 
-```yaml
-plugins:
-  - "@fauna-labs/serverless-fauna"
+The v10 and v4 plugins exclusively remove resources associated with their versions. Even so, we recommend you update the `deletion_policy` to `retain` during an upgrade. This ensures that subsequent deploys won't remove a critical resource in case a step was missed.
 
-fqlx:
-  client:
-    secret: ${env:FAUNA_SECRET}
-    # endpoint: http:\\db.fauna.com
+This makes the upgrade path fairly simple:
 
-  functions:
-    TimesTwo:
-      body: x => x * 2
+E.g.
+
+1. Start with a v4 schema, `serverless.yml`. Update the `deletion_policy` to `retain` and deploy it.
+
 ```
+fauna:
+  deletion_policy: retain
+  collections:
+    Movies:
+      name: Movies
+    Series:
+      name: Series
+```
+
+2. Create a v10 schema, `serverless-v10.yml`
+
+```
+fauna:
+  version: 10
+  collections:
+    Movies: {}
+```
+
+3. Run `sls fauna deploy -c serverless-v10.yml`. You should see this resource updated. Now the metadata associated with the collection tells the plugin that it's managed by a v10 schema.
+4. It's now safe to remove `Movies` from `serverless.yml`. If you run `sls fauna deploy -c serverless.yml` without removing Movies, the metadata will be updated again to tell the plugin it's managed by a v4 schema.
 
 ## Commands
 
 This plugin listens to hooks from default serverless commands, and runs its own logic.
 
-| command               | description                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| sls fauna deploy      | Sync all Fauna resources specified in the config. All resources created by the plugin have a property `created_by_serverless_plugin` |
-| sls fauna remove      | Remove all Fauna resources created by plugin [read more about deleting policy](#deletion_policy)                                     |
-| sls fauna fqlx deploy | Sync only Fauna FQL X resources specified in the config. These are specified under the `fqlx` property                               |
-| sls fauna fqlx remove | Remove all Fauna FQL X resources created by plugin, as determined by `created_by_serverless_plugin` == `fauna:v10`                   |
-| sls fauna fql4 deploy | Sync only Fauna FQL v4 resources specified in the config. These are specified under the `fqlx` property                              |
-| sls fauna fql4 remove | Remove all Fauna FQL v4 resources created by plugin, as determined by `created_by_serverless_plugin` == `true`                       |
+| command          | description                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| sls fauna deploy | Sync Fauna resources specified in the config. All resources created by the plugin have a property `created_by_serverless_plugin` |
+| sls fauna remove | Remove Fauna resources managed by the plugin. [read more about deleting policy](#deletion_policy)                                |
 
-## Configuration
+## FQL v4 Configuration
 
 ```yaml
 plugins:
   - "@fauna-labs/serverless-fauna"
-
-fqlx:
-  client:
-    secret: ${env:FAUNA_ROOT_KEY}
-    # AND
-    # domain: db.fauna.com
-    # port: 443
-    # scheme: https
-    #  OR
-    # endpoint: https://db.fauna.com
-  functions:
-    TimesTwo:
-      body: x => x * 2
 
 fauna:
   client:
@@ -143,7 +180,7 @@ fauna:
           - ref
 ```
 
-### FQL 4 Collection configuration
+### FQL v4 Collection configuration
 
 Accepts the same params as Fauna's [`CreateCollection` query](https://docs.fauna.com/fauna/current/api/fql/functions/createcollection?lang=javascript#param_object)
 
@@ -157,7 +194,7 @@ collections:
       some_data_key: some_data_value
 ```
 
-### FQL 4 Function configuration
+### FQL v4 Function configuration
 
 Accepts the same params as Fauna's [`CreateFunction` query](https://docs.fauna.com/fauna/current/api/fql/functions/createfunction?lang=javascript)
 
@@ -171,7 +208,7 @@ functions:
       desc: double number
 ```
 
-### FQL 4 Index configuration
+### FQL v4 Index configuration
 
 Accepts the same params as Fauna's [`CreateIndex` query](https://docs.fauna.com/fauna/current/api/fql/functions/createindex?lang=javascript#param_object).
 
@@ -195,7 +232,7 @@ search_by_category_and_sort_by_year:
       - is_current_year
 ```
 
-#### FQL 4 Index source
+#### FQL v4 Index source
 
 The index source could be a string, and will be interpreted as collection reference.
 
@@ -219,7 +256,7 @@ source:
   - collection: Series
 ```
 
-#### FQL 4 Index terms
+#### FQL v4 Index terms
 
 Index terms describe the fields that should be searchable.
 
@@ -231,7 +268,7 @@ terms:
     - binding
 ```
 
-#### FQL 4 Index values
+#### FQL v4 Index values
 
 Index values describe the fields returned, and have a similar structure to `terms`, but with an additional `reverse` field to define sort order.
 
@@ -244,7 +281,7 @@ values:
     - binding
 ```
 
-#### FQL 4 Index binding
+#### FQL v4 Index binding
 
 [Index bindings](https://docs.fauna.com/fauna/current/tutorials/indexes/bindings) allow you to compute fields for a source while the document is being indexed.
 
@@ -270,7 +307,7 @@ source:
     is_current_year: ${file(./IsCurrentYear.fql)}
 ```
 
-### FQL 4 Role configuration
+### FQL v4 Role configuration
 
 Accepts the same params as Fauna's [`CreateRole` query](https://docs.fauna.com/fauna/current/api/fql/functions/createrole?lang=javascript).
 
@@ -290,7 +327,7 @@ roles:
           call: true
 ```
 
-#### FQL 4 Role schema privileges
+#### FQL v4 Role schema privileges
 
 Read more about the [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
 
