@@ -28,19 +28,20 @@ class ServerlessFaunaPlugin {
     // If --help is true, init with nothing and return
     if (options.help) {
       const cmd = new FaunaCommands({
-          deployCommand: null,
-          removeCommand: null,
-        }
-      );
+        deployCommand: null,
+        removeCommand: null,
+      });
       Object.assign(this.hooks, cmd.hooks);
       Object.assign(this.commands.fauna.commands, cmd.command);
-      return
+      return;
     }
 
-    this.config.fauna.version = this.config.fauna.version ?? "4"
+    this.config.fauna.version = this.config.fauna.version ?? "4";
 
-
-    if (this.config.fauna.version === "10" || this.config.fauna.version === 10) {
+    if (
+      this.config.fauna.version === "10" ||
+      this.config.fauna.version === 10
+    ) {
       this.serverless.configSchemaHandler.defineTopLevelProperty(
         "fauna",
         faunaV10Schema
@@ -55,15 +56,17 @@ class ServerlessFaunaPlugin {
       });
 
       const cmd = new FaunaCommands({
-          config: this.config,
-          deployCommand: v10cmd,
-          removeCommand: v10cmd,
-        }
-      );
+        config: this.config,
+        deployCommand: v10cmd,
+        removeCommand: v10cmd,
+      });
 
       Object.assign(this.hooks, cmd.hooks);
       Object.assign(this.commands.fauna.commands, cmd.command);
-    } else if (this.config.fauna.version ===  "4" || this.config.fauna.version === 4) {
+    } else if (
+      this.config.fauna.version === "4" ||
+      this.config.fauna.version === 4
+    ) {
       this.serverless.configSchemaHandler.defineTopLevelProperty(
         "fauna",
         faunaV4Schema
@@ -87,16 +90,17 @@ class ServerlessFaunaPlugin {
       });
 
       const cmd = new FaunaCommands({
-          config: this.config,
-          deployCommand: v4deploy,
-          removeCommand: v4remove,
-        }
-      );
+        config: this.config,
+        deployCommand: v4deploy,
+        removeCommand: v4remove,
+      });
 
       Object.assign(this.hooks, cmd.hooks);
       Object.assign(this.commands.fauna.commands, cmd.command);
     } else {
-      throw new Error(`Version must be '4' or '10', but was '${this.config.fauna.version}'`)
+      throw new Error(
+        `Version must be '4' or '10', but was '${this.config.fauna.version}'`
+      );
     }
   }
 }

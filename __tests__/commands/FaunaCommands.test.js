@@ -9,7 +9,7 @@ const Logger = require("../../Logger");
 const getFql4Client = require("../../fauna/v4/client");
 const getFqlxClient = require("../../fauna/v10/client");
 const { cleanup } = require("../utils/cleanup");
-const {verifyLogs} = require("../utils/verify");
+const { verifyLogs } = require("../utils/verify");
 
 describe("FaunaCommands", () => {
   let fql10Client;
@@ -56,7 +56,6 @@ describe("FaunaCommands", () => {
       faunaClient: fql4Client,
       logger,
     });
-
   });
 
   beforeEach(async () => {
@@ -71,8 +70,8 @@ describe("FaunaCommands", () => {
   it("deploys and removes fql v10", async () => {
     const faunaCommands = new FaunaCommands({
       deployCommand: fql10Commands,
-      removeCommand: fql10Commands
-    })
+      removeCommand: fql10Commands,
+    });
 
     // Run deploy
     await faunaCommands.deploy();
@@ -97,7 +96,7 @@ describe("FaunaCommands", () => {
     const faunaCommands = new FaunaCommands({
       deployCommand: fql4DeployCommand,
       removeCommand: fql4RemoveCommand,
-    })
+    });
 
     // Run deploy
     await faunaCommands.deploy();
@@ -109,9 +108,7 @@ describe("FaunaCommands", () => {
 
     // Run remove
     await faunaCommands.remove();
-    expectedLogs = [
-      "Resource Function(\"FQLv4Func\") deleted",
-    ];
+    expectedLogs = ['Resource Function("FQLv4Func") deleted'];
     await verifyLogs(log, expectedLogs);
   });
 });

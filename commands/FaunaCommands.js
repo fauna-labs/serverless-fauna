@@ -5,19 +5,17 @@ class FaunaCommands {
    * @param deployCommand A deploy command.
    * @param removeCommand A remove command.
    */
-  constructor({deployCommand, removeCommand}) {
+  constructor({ deployCommand, removeCommand }) {
     this.deployCommand = deployCommand;
     this.removeCommand = removeCommand;
 
     this.command = {
       deploy: {
-        usage:
-          "Deploy the fauna schema definition.",
+        usage: "Deploy the fauna schema definition.",
         lifecycleEvents: ["deploy"],
       },
       remove: {
-        usage:
-          "Remove all schema managed by this plugin.",
+        usage: "Remove all schema managed by this plugin.",
         lifecycleEvents: ["remove"],
       },
     };
