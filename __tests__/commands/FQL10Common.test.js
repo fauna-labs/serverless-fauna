@@ -99,6 +99,7 @@ describe("FQL 10 Common", () => {
   });
 
   afterAll(async () => {
+    await cleanup(client);
     client.close();
   });
 

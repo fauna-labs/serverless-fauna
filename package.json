@@ -6,7 +6,12 @@
   "scripts": {
     "lint": "prettier --write .",
     "lint-ci": "prettier --check .",
-    "test": "jest --coverage --runInBand"
+    "test": "jest --coverage --runInBand",
+    "test-examples-install": "cd examples && yarn install --no-lockfile",
+    "test-examples-deploy-v10": "cd examples && yarn deploy-v10",
+    "test-examples-deploy-v4": "cd examples && yarn deploy-v4",
+    "test-examples-help": "cd examples && yarn run help",
+    "examples": "yarn test-examples-help && yarn test-examples-install && yarn test-examples-deploy-v10 && yarn test-examples-deploy-v4"
   },
   "dependencies": {
     "fauna": "^0.9.0",

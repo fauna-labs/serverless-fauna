@@ -54,6 +54,7 @@ describe("FQL 10 Collections", () => {
   });
 
   afterAll(async () => {
+    await cleanup(client);
     client.close();
   });
 

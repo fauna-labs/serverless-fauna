@@ -22,6 +22,7 @@ module.exports = {
           type: "object",
           additionalProperties: false,
           properties: {
+            queryable: { type: "boolean" },
             terms: {
               type: "array",
               items: {

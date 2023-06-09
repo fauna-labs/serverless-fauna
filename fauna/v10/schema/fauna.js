@@ -8,6 +8,7 @@ module.exports = {
   required: ["client"],
   additionalProperties: false,
   properties: {
+    version: {},
     client: clientProp,
     deletion_policy: { type: "string" },
     functions: {

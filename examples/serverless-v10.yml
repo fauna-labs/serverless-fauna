@@ -1,0 +1,66 @@
+service: sample-v10
+
+plugins:
+  - "@fauna-labs/serverless-fauna"
+
+provider: # dummy values
+  name: aws
+  runtime: nodejs14.x
+
+fauna:
+  version: 10
+  deletion_policy: destroy
+  client:
+    secret: ${env:FAUNA_SECRET, "secret"}
+    endpoint: ${env:FAUNA_ENDPOINT, "http://localhost:8443"}
+
+  collections:
+    UsersV10: {}
+    CollV10:
+      constraints:
+        - unique: name
+      indexes:
+        byName:
+          queryable: false
+          terms:
+            - field: name
+        byDateOfBirth:
+          terms:
+            - field: date_of_birth
+          values:
+            - field: date_of_birth
+              order: desc
+
+  functions:
+    FuncV10:
+      body: _ => 1
+      role: FuncV10Role
+
+  roles:
+    FuncV10Role:
+      privileges:
+        - resource: CollV10
+          actions:
+            read: true
+            write: true
+    RoleV10:
+      privileges:
+        - resource: CollV10
+          actions:
+            read: true
+            write: |
+              (before, after) => true
+        - resource: FuncV10
+          actions:
+            call: true
+    MembershipRoleV10:
+      membership:
+        - resource: UsersV10
+          predicate: user => user.isAdmin
+      privileges:
+        - resource: CollV10
+          actions:
+            read: true
+            write: true
+            create: true
+            delete: true

@@ -1,0 +1,46 @@
+service: sample-v4
+
+plugins:
+  - "@fauna-labs/serverless-fauna"
+
+provider: # dummy values
+  name: aws
+  runtime: nodejs14.x
+
+fauna:
+  version: 4
+  deletion_policy: destroy
+  client:
+    secret: ${env:FAUNA_SECRET, "secret"}
+    domain: ${env:FAUNA_DOMAIN, "localhost"}
+    scheme: ${env:FAUNA_SCHEME, "http"}
+    port: ${env:FAUNA_PORT, "8443"}
+
+  collections:
+    CollV4:
+      name: CollV4
+
+  indexes:
+    IndexV4:
+      name: IndexV4
+      source: CollV4
+      terms:
+        fields:
+          - data.name
+
+  functions:
+    FuncV4:
+      name: FuncV4
+      body: Lambda("p", Var("p"))
+
+  roles:
+    RoleV4:
+      name: RoleV4
+      privileges:
+        - collection: CollV4
+          actions:
+            read: true
+            write: true
+        - function: FuncV4
+          actions:
+            call: true

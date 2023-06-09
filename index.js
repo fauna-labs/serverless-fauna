@@ -2,7 +2,7 @@
 const Logger = require("./Logger");
 const FQL4DeployCommand = require("./commands/FQL4DeployCommand");
 const FQL4RemoveCommand = require("./commands/FQL4RemoveCommand");
-const faunaSchema = require("./fauna/v4/schema/fauna");
+const faunaV4Schema = require("./fauna/v4/schema/fauna");
 const getV4Client = require("./fauna/v4/client");
 
 const faunaV10Schema = require("./fauna/v10/schema/fauna");
@@ -25,34 +25,52 @@ class ServerlessFaunaPlugin {
       },
     };
 
-    this.initSchema();
+    // If --help is true, init with nothing and return
+    if (options.help) {
+      const cmd = new FaunaCommands({
+          deployCommand: null,
+          removeCommand: null,
+        }
+      );
+      Object.assign(this.hooks, cmd.hooks);
+      Object.assign(this.commands.fauna.commands, cmd.command);
+      return
+    }
 
-    const deployCommands = [];
-    const removeCommands = [];
+    this.config.fauna.version = this.config.fauna.version ?? "4"
 
-    if (this.config.fqlx !== undefined) {
-      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
-      const client = options.help
-        ? null
-        : getV10Client(this.config.fqlx.client);
-      const cmd = new FQL10Commands({
-        faunaClient: client,
+
+    if (this.config.fauna.version === "10" || this.config.fauna.version === 10) {
+      this.serverless.configSchemaHandler.defineTopLevelProperty(
+        "fauna",
+        faunaV10Schema
+      );
+
+      const v10cmd = new FQL10Commands({
+        faunaClient: getV10Client(this.config.fauna.client),
         serverless: this.serverless,
-        config: this.config.fqlx,
+        config: this.config.fauna,
         options: this.options,
         logger: this.logger,
       });
 
-      deployCommands.push(cmd);
-      removeCommands.push(cmd);
-    }
+      const cmd = new FaunaCommands({
+          config: this.config,
+          deployCommand: v10cmd,
+          removeCommand: v10cmd,
+        }
+      );
 
-    if (this.config.fauna !== undefined) {
-      // sls --help doesn't resolve yaml ${} vars, so we can't construct a client
-      const client = options.help
-        ? null
-        : getV4Client(this.config.fauna.client);
-      const deploy = new FQL4DeployCommand({
+      Object.assign(this.hooks, cmd.hooks);
+      Object.assign(this.commands.fauna.commands, cmd.command);
+    } else if (this.config.fauna.version ===  "4" || this.config.fauna.version === 4) {
+      this.serverless.configSchemaHandler.defineTopLevelProperty(
+        "fauna",
+        faunaV4Schema
+      );
+
+      const client = getV4Client(this.config.fauna.client);
+      const v4deploy = new FQL4DeployCommand({
         faunaClient: client,
         serverless: this.serverless,
         config: this.config.fauna,
@@ -60,9 +78,7 @@ class ServerlessFaunaPlugin {
         logger: this.logger,
       });
 
-      deployCommands.push(deploy);
-
-      const remove = new FQL4RemoveCommand({
+      const v4remove = new FQL4RemoveCommand({
         faunaClient: client,
         serverless: this.serverless,
         config: this.config.fauna,
@@ -70,29 +86,18 @@ class ServerlessFaunaPlugin {
         logger: this.logger,
       });
 
-      removeCommands.push(remove);
+      const cmd = new FaunaCommands({
+          config: this.config,
+          deployCommand: v4deploy,
+          removeCommand: v4remove,
+        }
+      );
+
+      Object.assign(this.hooks, cmd.hooks);
+      Object.assign(this.commands.fauna.commands, cmd.command);
+    } else {
+      throw new Error(`Version must be '4' or '10', but was '${this.config.fauna.version}'`)
     }
-
-    const faunaCommands = new FaunaCommands(
-      this.config,
-      deployCommands,
-      removeCommands.reverse()
-    );
-
-    Object.assign(this.hooks, faunaCommands.hooks);
-    Object.assign(this.commands.fauna.commands, faunaCommands.command);
-  }
-
-  initSchema() {
-    this.serverless.configSchemaHandler.defineTopLevelProperty(
-      "fqlx",
-      faunaV10Schema
-    );
-
-    this.serverless.configSchemaHandler.defineTopLevelProperty(
-      "fauna",
-      faunaSchema
-    );
   }
 }
 
