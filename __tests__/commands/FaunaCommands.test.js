@@ -6,14 +6,14 @@ const FaunaCommands = require("../../commands/FaunaCommands");
 const { fql } = require("fauna");
 const clientConfig = require("../config");
 const Logger = require("../../Logger");
-const getFql4Client = require("../../fauna/v4/client");
-const getFqlxClient = require("../../fauna/v10/client");
+const getV4Client = require("../../fauna/v4/client");
+const getV10Client = require("../../fauna/v10/client");
 const { cleanup } = require("../utils/cleanup");
 const { verifyLogs } = require("../utils/verify");
 
 describe("FaunaCommands", () => {
-  let fql10Client;
-  let fql4Client;
+  let v10Client;
+  let v4Client;
   const log = jest.fn();
   const logger = new Logger({ log });
   let fql10Commands, fql4DeployCommand, fql4RemoveCommand;
@@ -36,35 +36,35 @@ describe("FaunaCommands", () => {
   };
 
   beforeAll(async () => {
-    fql4Client = getFql4Client(clientConfig);
-    fql10Client = getFqlxClient(clientConfig);
+    v4Client = getV4Client(clientConfig);
+    v10Client = getV10Client(clientConfig);
 
     fql10Commands = new FQL10Commands({
       config: fql10Config,
-      faunaClient: fql10Client,
+      faunaClient: v10Client,
       logger,
     });
 
     fql4DeployCommand = new FQL4DeployCommand({
       config: fql4Config,
-      faunaClient: fql4Client,
+      faunaClient: v4Client,
       logger,
     });
 
     fql4RemoveCommand = new FQL4RemoveCommand({
       config: fql4Config,
-      faunaClient: fql4Client,
+      faunaClient: v4Client,
       logger,
     });
   });
 
   beforeEach(async () => {
-    await cleanup(fql10Client);
+    await cleanup(v10Client);
   });
 
   afterAll(async () => {
-    fql4Client.close();
-    fql10Client.close();
+    v4Client.close();
+    v10Client.close();
   });
 
   it("deploys and removes fql v10", async () => {
