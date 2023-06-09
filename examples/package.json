@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "deploy-v10": "sls fauna deploy -c serverless-v10.yml && sls fauna remove -c serverless-v10.yml",
+    "deploy-v4": "sls fauna deploy -c serverless-v4.yml && sls fauna remove -c serverless-v4.yml",
+    "help": "sls fauna --help -c serverless-v10.yml && sls fauna deploy --help -c serverless-v10.yml && sls fauna remove --help -c serverless-v10.yml"
+  },
+  "devDependencies": {
+    "@fauna-labs/serverless-fauna": "file:../",
+    "serverless": "^3.32.2"
+  }
+}

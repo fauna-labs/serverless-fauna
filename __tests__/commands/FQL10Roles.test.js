@@ -54,6 +54,7 @@ describe("FQL 10 Roles", () => {
   });
 
   afterAll(async () => {
+    await cleanup(client);
     client.close();
   });
 

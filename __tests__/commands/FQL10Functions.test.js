@@ -38,6 +38,7 @@ describe("FQL 10 Functions", () => {
   });
 
   afterAll(async () => {
+    await cleanup(client);
     client.close();
   });
 

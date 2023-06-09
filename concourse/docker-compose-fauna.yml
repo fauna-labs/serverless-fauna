@@ -20,6 +20,7 @@ services:
       FAUNA_DOMAIN: faunadb
       FAUNA_PORT: 8443
       FAUNA_SECRET: secret
+      FAUNA_ENDPOINT: http://faunadb:8443
     command:
       - /bin/sh
       - -cxe
@@ -28,3 +29,4 @@ services:
         ./concourse/scripts/wait-for-it.sh http://faunadb:8443/ping
         npm install
         npm run test
+        npm run examples
