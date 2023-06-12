@@ -122,7 +122,7 @@ fauna:
 
 3. Update to v10 by running `sls fauna deploy -c serverless-v10.yml`.
 
-    You should see this resource updated. Now, the collection metadata tells the plugin that it's managed by a v10 schema.
+   You should see this resource updated. Now, the collection metadata tells the plugin that it's managed by a v10 schema.
 
 4. Remove `Movies` from `serverless.yml`.
 
