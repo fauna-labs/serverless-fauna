@@ -1,10 +1,10 @@
-This repository contains unofficial patterns, sample code, or tools to help developers build more effectively with [Fauna][fauna]. All [Fauna Labs][fauna-labs] repositories are provided “as-is” and without support. By using this repository or its contents, you agree that this repository may never be officially supported and moved to the [Fauna organization][fauna-organization].
+This repository contains unofficial patterns, sample code, and tools to help developers build more effectively with [Fauna][fauna]. All [Fauna Labs][fauna-labs] repositories are provided “as-is” and without support. By using this repository or its contents, you agree that this repository may never be officially supported and moved to the [Fauna organization][fauna-organization].
 
 ---
 
 # Serverless Fauna
 
-This [Serverless Framework][serverless-framework] plugin allows you to manage Fauna databases and resources directly in your `serverless.yml` file. You can integrate it in your test and CI/CD pipeliness to keep your databases in sync across multiple environments. Visit [this repository][serverless-fauna-example] for a sample application that demonstrates how to create, update, and delete collections, indexes, roles, and user-defined functions (UDFs).
+This [Serverless Framework][serverless-framework] plugin allows you to manage Fauna databases and resources directly in your `serverless.yml` file. You can integrate it into your test and CI/CD pipeliness to keep your databases in sync across multiple environments. Visit [this repository][serverless-fauna-example] for a sample application demonstrating how to create, update, and delete collections, indexes, roles, and user-defined functions (UDFs).
 
 - [Serverless Fauna](#serverless-fauna)
   - [Installation](#installation)
@@ -38,7 +38,7 @@ $ yarn add @fauna-labs/serverless-fauna
 
 ## FQL v10 (beta)
 
-FQL v10 resources follow a different schema than v4. As such, you must declare your v4 and v10 resources in separate files. Specify a v10 schema by setting `version: 10`, like so:
+FQL v10 resources follow a different schema than v4. You must declare your v4 and v10 resources in separate files. Specify a v10 schema by setting `version: 10`, like so:
 
 ```
 plugins:
@@ -87,18 +87,19 @@ You still use `sls fauna deploy` and `remove` commands to create, update and des
 ### Notable Differences
 
 - You don't declare a separate `name` property on your config. Instead, the key is used as the name.
-- Create and Update actions during a deploy command are handled in a single transaction. If for some reason your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
-- Destruction of resources during a deploy command is handled as a separate single transaction following creates/updates.
+- Create and Update actions during a deploy command are handled in a single transaction. If, for some reason, your schema is large enough to cause an error, you should break it up into separate logical files for deployment.
+- Destruction of resources during a deploy command is handled as a single separate transaction following creates/updates.
 
 ### Migrating to FQL v10
 
-The v10 and v4 plugins exclusively remove resources associated with their versions. Even so, we recommend you update the `deletion_policy` to `retain` during an upgrade. This ensures that subsequent deploys won't remove a critical resource in case a step was missed.
+The v10 and v4 plugins exclusively remove resources associated with their versions. Even so, we recommend you update the `deletion_policy` to `retain` during an upgrade. Updating ensures that subsequent deploys won't remove a critical resource if a step is missed.
 
 This makes the upgrade path fairly simple:
 
 E.g.
 
-1. Start with a v4 schema, `serverless.yml`. Update the `deletion_policy` to `retain` and deploy it.
+1. Start with a v4 schema, `serverless.yml`.
+2. Update the `deletion_policy` to `retain` and deploy it.
 
 ```
 fauna:
@@ -119,8 +120,13 @@ fauna:
     Movies: {}
 ```
 
-3. Run `sls fauna deploy -c serverless-v10.yml`. You should see this resource updated. Now the metadata associated with the collection tells the plugin that it's managed by a v10 schema.
-4. It's now safe to remove `Movies` from `serverless.yml`. If you run `sls fauna deploy -c serverless.yml` without removing Movies, the metadata will be updated again to tell the plugin it's managed by a v4 schema.
+3. Update to v10 by running `sls fauna deploy -c serverless-v10.yml`.
+
+   You should see this resource updated. Now, the collection metadata tells the plugin that it's managed by a v10 schema.
+
+4. Remove `Movies` from `serverless.yml`.
+
+   NOTE: If you run `sls fauna deploy -c serverless.yml` without removing `Movies`, the metadata will be updated again to tell the plugin it's managed by a v4 schema.
 
 ## Commands
 
@@ -331,7 +337,7 @@ roles:
 
 Read more about the [privilege configuration object](https://docs.fauna.com/fauna/current/security/roles#pco)
 
-For schema privileges, just specify a field key without a value:
+For schema privileges, specify a field key without a value:
 
 ```yaml
 roles:
