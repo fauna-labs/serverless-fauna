@@ -36,6 +36,8 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet. Minor version releases may still contain breaking changes. If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file. For example, `"~0.2.0"` or `"~0.1.6"`
 
+This is a plugin for [serverless](serverless-framework), and supports version 3 and above. For serverless 2, install `serverless-fauna` version 0.1.6.
+
 ## FQL v10 (beta)
 
 FQL v10 resources follow a different schema than v4. You must declare your v4 and v10 resources in separate files. Specify a v10 schema by setting `version: 10`, like so:
