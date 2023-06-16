@@ -46,7 +46,8 @@ describe("FQL 10 Functions", () => {
     const config = {
       functions: {
         NoData: {
-          body: "_ => 1",
+          body: "x => 1 + x",
+          signature: "(x: Number) => Number",
         },
       },
     };

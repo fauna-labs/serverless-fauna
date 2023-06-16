@@ -4,6 +4,7 @@ module.exports = {
   additionalProperties: false,
   properties: {
     body: { type: "string" },
+    signature: { type: "string" },
     data: { type: "object" },
     role: { type: "string" },
   },

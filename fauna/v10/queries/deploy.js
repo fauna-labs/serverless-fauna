@@ -99,8 +99,8 @@ const createUpdateFunction = (params, preview = false) => {
   return fql`
   {
     let p = ${params}
-    let p = p { name, body, data, role, }
-    
+    let p = p { name, body, signature, data, role, }
+
     if (Function.byName(p.name) == null) {
       let created = if (${preview}) {
         p
@@ -108,6 +108,7 @@ const createUpdateFunction = (params, preview = false) => {
         Function.create(p) {
           name,
           body,
+          signature,
           data,
           role,
         }
@@ -118,6 +119,7 @@ const createUpdateFunction = (params, preview = false) => {
       let original = func {
         name,
         body,
+        signature,
         data,
         role,
       }
@@ -129,6 +131,7 @@ const createUpdateFunction = (params, preview = false) => {
           let updated = func.replace(p) {
             name,
             body,
+            signature,
             data,
             role,
           }

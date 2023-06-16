@@ -23,6 +23,7 @@ const verifyFunctions = async (client, functions) => {
     expect(a.data).toEqual(e.data);
     expect(a.name).toEqual(e.name);
     expect(a.body).toEqual(e.body);
+    expect(a.signature).toEqual(e.signature);
     expect(a.role).toEqual(e.role);
   }
 };

@@ -33,7 +33,8 @@ fauna:
 
   functions:
     FuncV10:
-      body: _ => 1
+      body: x => 1 + x
+      signature: "(x: Number) => Number"
       role: FuncV10Role
 
   roles:
