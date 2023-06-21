@@ -419,7 +419,7 @@ roles:
 
 This plugin keeps your Fauna database in sync with your serverless configuration file. Therefore, the plugin will remove any resources that currently exist in Fauna, but are not declared in your serverless.com configuration file.
 
-If there are resources that you absolutely do not want deleted, even though they might not be in your serverless.com configuration, you can set `deletion_policy` to `retain` (the default being `destroy`) in the top level `fauna` or `fqlx` configuration. In example below, Fauna resources will not be deleted:
+If there are resources that you absolutely do not want deleted, even though they might not be in your serverless.com configuration, you can set `deletion_policy` to `retain` (the default being `destroy`) in the top level `fauna` configuration. In example below, Fauna resources will not be deleted:
 
 ```yaml
 fauna:
@@ -436,7 +436,8 @@ collections:
     name: Movies
   logs:
     name: logs
-    deletion_policy: destroy
+    data:
+      deletion_policy: destroy
 ```
 
 # Developers
