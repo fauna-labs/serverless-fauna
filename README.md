@@ -36,7 +36,7 @@ $ yarn add @fauna-labs/serverless-fauna
 
 > NOTE: This package has not reached a 1.0 release yet. Minor version releases may still contain breaking changes. If you wish, you can restrict your projects to only accepting patch updates by prefacing the version number with a `"~"` in your `package.json` file. For example, `"~0.2.0"` or `"~0.1.6"`
 
-## FQL v10 (beta)
+## FQL v10
 
 FQL v10 resources follow a different schema than v4. You must declare your v4 and v10 resources in separate files. Specify a v10 schema by setting `version: 10`, like so:
 
@@ -80,9 +80,9 @@ You still use `sls fauna deploy` and `remove` commands to create, update and des
 
 ### Supported FQL v10 Resources
 
-- [Functions](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/schema_entities/function/document_definition)
-- [Collections with indexes and constraints](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/schema_entities/collection/document_definition)
-- [Roles](https://fqlx-beta--fauna-docs.netlify.app/fqlx/beta/reference/auth/role/document_definition)
+- [Functions](https://docs.fauna.com/fauna/current/reference/schema_entities/function/document_definition)
+- [Collections with indexes and constraints](https://docs.fauna.com/fauna/current/reference/schema_entities/collection/document_definition)
+- [Roles](https://docs.fauna.com/fauna/current/reference/auth/role/document_definition)
 
 ### Notable Differences
 
