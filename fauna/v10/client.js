@@ -23,6 +23,7 @@ function getV10Client({ secret, endpoint, scheme, port, domain }) {
     return new Client({
       endpoint: new URL(`${scheme}://${domain}:${port}`),
       secret,
+      typecheck: false,
     });
   }
 }
