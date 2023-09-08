@@ -10,11 +10,13 @@ function getV10Client({ secret, endpoint, scheme, port, domain }) {
   if (endpoint == null && scheme == null && port == null && domain == null) {
     return new Client({
       secret,
+      typecheck: false,
     });
   } else if (endpoint != null) {
     return new Client({
       endpoint: new URL(endpoint),
       secret,
+      typecheck: false,
     });
   } else {
     scheme = scheme ?? "https";
