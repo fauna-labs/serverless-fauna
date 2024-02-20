@@ -118,8 +118,6 @@ class FQL10Commands {
       collections: toArray(collections).map((c) => {
         c.indexes = c.indexes ?? {};
         c.constraints = c.constraints ?? [];
-        c.ttl_days = c.ttl_days ?? null;
-        c.history_days = c.history_days ?? 0;
         Object.entries(c.indexes).forEach(([idxName, idxDef]) => {
           // Default index value order to asc to make diffing easier
           if (idxDef.values != null) {

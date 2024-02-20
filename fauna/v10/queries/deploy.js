@@ -9,7 +9,6 @@ const { fql } = require("fauna");
  *          [{ type: "Collection", name: str, action: "created" | "updated", preview: bool}, ...]
  */
 const createUpdateCollection = (params, preview = false) => {
-  console.log(params);
   return fql`
   {
     let deleteKey = (key, obj) => {
