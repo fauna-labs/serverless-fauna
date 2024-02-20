@@ -2,3 +2,4 @@
 /coverage/
 /testConfig.json
 yarn.lock
+.env
