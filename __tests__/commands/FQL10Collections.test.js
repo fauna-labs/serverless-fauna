@@ -68,6 +68,67 @@ describe("FQL 10 Collections", () => {
         },
       };
 
+      try {
+        // Run create
+        await runDeploy(config);
+      } catch (e) {
+        console.log(e);
+      }
+
+      let logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection created",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run noop
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run update
+      const newConfig = {
+        collections: {
+          MyNewCollection: {
+            data: { cat: "Sparky" },
+          },
+        },
+      };
+      await runDeploy(newConfig);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection updated",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, newConfig.collections);
+
+      // Run remove
+      await runRemove(config);
+      logs = [
+        "FQL v10 schema remove in progress...",
+        "Collection: MyNewCollection deleted",
+        "FQL v10 schema remove complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyNoCollections();
+    });
+
+    it("manages a collection with ttl_days", async () => {
+      const config = {
+        collections: {
+          MyNewCollection: {
+            ttl_days: 10,
+          },
+        },
+      };
+
       // Run create
       await runDeploy(config);
       let logs = [
@@ -91,7 +152,63 @@ describe("FQL 10 Collections", () => {
       const newConfig = {
         collections: {
           MyNewCollection: {
-            data: { cat: "Sparky" },
+            ttl_days: 20,
+          },
+        },
+      };
+      await runDeploy(newConfig);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection updated",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, newConfig.collections);
+
+      // Run remove
+      await runRemove(config);
+      logs = [
+        "FQL v10 schema remove in progress...",
+        "Collection: MyNewCollection deleted",
+        "FQL v10 schema remove complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyNoCollections();
+    });
+
+    it("manages a collection with history_days", async () => {
+      const config = {
+        collections: {
+          MyNewCollection: {
+            history_days: 10,
+          },
+        },
+      };
+
+      // Run create
+      await runDeploy(config);
+      let logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection created",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run noop
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run update
+      const newConfig = {
+        collections: {
+          MyNewCollection: {
+            history_days: 20,
           },
         },
       };

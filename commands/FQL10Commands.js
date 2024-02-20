@@ -1,6 +1,6 @@
 const deployQuery = require("../fauna/v10/queries/deploy");
 const removeQuery = require("../fauna/v10/queries/remove");
-const { ServiceError, fql } = require("fauna");
+const { ServiceError } = require("fauna");
 
 class FQL10Commands {
   constructor({ config, faunaClient, logger }) {
@@ -118,6 +118,8 @@ class FQL10Commands {
       collections: toArray(collections).map((c) => {
         c.indexes = c.indexes ?? {};
         c.constraints = c.constraints ?? [];
+        c.ttl_days = c.ttl_days ?? null;
+        c.history_days = c.history_days ?? 0;
         Object.entries(c.indexes).forEach(([idxName, idxDef]) => {
           // Default index value order to asc to make diffing easier
           if (idxDef.values != null) {
