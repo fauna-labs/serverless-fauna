@@ -14,36 +14,38 @@ const createUpdateCollection = (params, preview = false) => {
     let deleteKey = (key, obj) => {
       Object.fromEntries(Object.entries(obj).where(e => key != e[0]))
     }
-    
+
     let cleanIndexes = (realIndexes, paramsIndexes) => {
       Object.fromEntries(Object.entries(realIndexes).map(e => {
         // Always remove status because users don't set it
         let newValue = deleteKey("status", e[1])
-        
+
         // The queryable prop is always returned on an index, so remove it unless it's on params
         let newValue = if (paramsIndexes != null && paramsIndexes[e[0]] != null && paramsIndexes[e[0]].queryable == null) {
           deleteKey("queryable", newValue)
         } else {
           newValue
         }
-        
+
         [e[0], newValue]
       }))
     }
-    
+
     let deleteConstraintStatuses = (constraints) => {
       // Always remove status because users don't set it
       constraints.map(c => deleteKey("status", c))
     }
-    
+
     let p = ${params}
     let p = p {
       name,
       indexes,
       constraints,
       data,
+      ttl_days,
+      history_days,
     }
-   
+
     if (Collection.byName(p.name) == null) {
       let created = if (${preview}) {
         p
@@ -54,6 +56,8 @@ const createUpdateCollection = (params, preview = false) => {
           indexes: cleanIndexes(c.indexes, p.indexes),
           constraints: deleteConstraintStatuses(c.constraints),
           data,
+          ttl_days,
+          history_days,
         }
       }
 
@@ -65,8 +69,10 @@ const createUpdateCollection = (params, preview = false) => {
         indexes: cleanIndexes(coll.indexes ?? {}, p.indexes),
         constraints: deleteConstraintStatuses(coll.constraints ?? []),
         data,
+        ttl_days,
+        history_days,
       }
-      
+
       if (original != p) {
         if (${preview}) {
           [{ type: "Collection", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]
@@ -77,6 +83,8 @@ const createUpdateCollection = (params, preview = false) => {
             indexes: cleanIndexes(updated.indexes, p.indexes),
             constraints: deleteConstraintStatuses(updated.constraints),
             data,
+            ttl_days,
+            history_days,
           }
           [{ type: "Collection", name: p.name, action: "updated", preview: ${preview}, original: original, result: updated }]
         }
@@ -123,7 +131,7 @@ const createUpdateFunction = (params, preview = false) => {
         data,
         role,
       }
-      
+
       if (original != p) {
         if (${preview}) {
           [{ type: "Function", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]
@@ -157,7 +165,7 @@ const createUpdateRole = (params, preview = false) => {
   {
     let p = ${params}
     let p = p { name, membership, privileges, data, }
-    
+
     if (Role.byName(p.name) == null) {
       let created = if (${preview}) {
         p
@@ -170,7 +178,7 @@ const createUpdateRole = (params, preview = false) => {
         }
       }
 
-      [{ type: "Role", name: p.name, action: "created", preview: ${preview}, result: created }]  
+      [{ type: "Role", name: p.name, action: "created", preview: ${preview}, result: created }]
     } else {
       let role = Role.byName(p.name)
       let original = role {
@@ -179,7 +187,7 @@ const createUpdateRole = (params, preview = false) => {
         privileges,
         data,
       }
-      
+
       if (original != p) {
         if (${preview}) {
           [{ type: "Role", name: p.name, action: "updated", preview: ${preview}, original: original, result: p }]

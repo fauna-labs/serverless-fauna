@@ -36,6 +36,7 @@ const verifyCollections = async (client, collections) => {
   const actual = await client.query(
     fql`Collection.all().order( .name ).toArray()`
   );
+
   if (collections.length !== actual.data.length) {
     expect(actual.data).toEqual(collections);
   }
@@ -60,6 +61,8 @@ const verifyCollections = async (client, collections) => {
     expect(a.data).toEqual(e.data);
     expect(a.indexes).toEqual(e.indexes ?? {});
     expect(a.constraints).toEqual(e.constraints ?? []);
+    expect(a.ttl_days).toEqual(e.ttl_days);
+    expect(a.history_days).toEqual(e.history_days);
   }
 };
 

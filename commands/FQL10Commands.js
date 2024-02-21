@@ -1,6 +1,6 @@
 const deployQuery = require("../fauna/v10/queries/deploy");
 const removeQuery = require("../fauna/v10/queries/remove");
-const { ServiceError, fql } = require("fauna");
+const { ServiceError } = require("fauna");
 
 class FQL10Commands {
   constructor({ config, faunaClient, logger }) {

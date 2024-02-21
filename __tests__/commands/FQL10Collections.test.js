@@ -70,6 +70,7 @@ describe("FQL 10 Collections", () => {
 
       // Run create
       await runDeploy(config);
+
       let logs = [
         "FQL v10 schema update in progress...",
         "Collection: MyNewCollection created",
@@ -92,6 +93,118 @@ describe("FQL 10 Collections", () => {
         collections: {
           MyNewCollection: {
             data: { cat: "Sparky" },
+          },
+        },
+      };
+      await runDeploy(newConfig);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection updated",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, newConfig.collections);
+
+      // Run remove
+      await runRemove(config);
+      logs = [
+        "FQL v10 schema remove in progress...",
+        "Collection: MyNewCollection deleted",
+        "FQL v10 schema remove complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyNoCollections();
+    });
+
+    it("manages a collection with ttl_days", async () => {
+      const config = {
+        collections: {
+          MyNewCollection: {
+            ttl_days: 10,
+          },
+        },
+      };
+
+      // Run create
+      await runDeploy(config);
+      let logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection created",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run noop
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run update
+      const newConfig = {
+        collections: {
+          MyNewCollection: {
+            ttl_days: 20,
+          },
+        },
+      };
+      await runDeploy(newConfig);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection updated",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, newConfig.collections);
+
+      // Run remove
+      await runRemove(config);
+      logs = [
+        "FQL v10 schema remove in progress...",
+        "Collection: MyNewCollection deleted",
+        "FQL v10 schema remove complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyNoCollections();
+    });
+
+    it("manages a collection with history_days", async () => {
+      const config = {
+        collections: {
+          MyNewCollection: {
+            history_days: 10,
+          },
+        },
+      };
+
+      // Run create
+      await runDeploy(config);
+      let logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: MyNewCollection created",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run noop
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
+
+      // Run update
+      const newConfig = {
+        collections: {
+          MyNewCollection: {
+            history_days: 20,
           },
         },
       };
@@ -227,57 +340,57 @@ describe("FQL 10 Collections", () => {
       verifyLogs(log, logs);
       await verifyNoCollections();
     });
-  });
 
-  it("manages a collection with constraints", async () => {
-    const config = {
-      collections: {
-        CollectionWithConstraints: {
-          constraints: [{ unique: ["name"] }],
+    it("manages a collection with constraints", async () => {
+      const config = {
+        collections: {
+          CollectionWithConstraints: {
+            constraints: [{ unique: ["name"] }],
+          },
         },
-      },
-    };
+      };
 
-    // Run Create
-    await runDeploy(config);
-    let logs = [
-      "FQL v10 schema update in progress...",
-      "Collection: CollectionWithConstraints created",
-      "FQL v10 schema update complete",
-    ];
-    verifyLogs(log, logs);
-    await verifyCollections(client, config.collections);
+      // Run Create
+      await runDeploy(config);
+      let logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: CollectionWithConstraints created",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
 
-    // Run Noop
-    await runDeploy(config);
-    logs = [
-      "FQL v10 schema update in progress...",
-      "FQL v10 schema update complete",
-    ];
-    verifyLogs(log, logs);
-    await verifyCollections(client, config.collections);
+      // Run Noop
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
 
-    // Test Update
-    config.collections.CollectionWithConstraints.constraints = [
-      { unique: ["pet_name"] },
-    ];
-    await runDeploy(config);
-    logs = [
-      "FQL v10 schema update in progress...",
-      "Collection: CollectionWithConstraints updated",
-      "FQL v10 schema update complete",
-    ];
-    verifyLogs(log, logs);
-    await verifyCollections(client, config.collections);
+      // Test Update
+      config.collections.CollectionWithConstraints.constraints = [
+        { unique: ["pet_name"] },
+      ];
+      await runDeploy(config);
+      logs = [
+        "FQL v10 schema update in progress...",
+        "Collection: CollectionWithConstraints updated",
+        "FQL v10 schema update complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyCollections(client, config.collections);
 
-    // Run remove
-    await runRemove(config);
-    logs = [
-      "FQL v10 schema remove in progress...",
-      "Collection: CollectionWithConstraints deleted",
-      "FQL v10 schema remove complete",
-    ];
-    verifyLogs(log, logs);
-    await verifyNoCollections();
+      // Run remove
+      await runRemove(config);
+      logs = [
+        "FQL v10 schema remove in progress...",
+        "Collection: CollectionWithConstraints deleted",
+        "FQL v10 schema remove complete",
+      ];
+      verifyLogs(log, logs);
+      await verifyNoCollections();
+    });
   });
 });
